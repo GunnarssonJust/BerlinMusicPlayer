@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Schicht 1: Der Hintergrund (Verlauf von Schwarz nach Gelb) -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners
+                android:bottomLeftRadius="1dp"
+                android:bottomRightRadius="1dp"
+                android:topLeftRadius="1dp"
+                android:topRightRadius="1dp"/>
+            <gradient
+                android:type="linear"
+                android:startColor="@color/black"
+                android:centerColor="@color/black"
+                android:endColor="@color/yellow"
+                android:angle="270"
+                android:centerY="0.5"/>
+        </shape>
+    </item>
+
+    <!-- Schicht 2: Der schmale, rote Streifen in der Mitte -->
+    <!--
+        HIER IST DIE KORREKTUR:
+        'top' und 'bottom' sind jetzt Attribute DES <item>-TAGS.
+-->
+    <item
+        android:top="16dp"
+        android:bottom="16dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/darkred"/>
+        </shape>
+    </item>
+
+</layer-list>

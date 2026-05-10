@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".NowPlayingFragmentBottom">
+
+    <RelativeLayout
+        android:id="@+id/card_bottom_player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/miniplayer_background"
+        android:padding="5dp"
+        >
+
+        <ImageView
+            android:id="@+id/bottom_album_art"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_play_btn"
+            android:scaleType="centerCrop"/>
+
+        <ImageView
+            android:id="@+id/skip_next_bottom"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@mipmap/ic_forward"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="10dp" />
+
+        <ImageView
+            android:id="@+id/play_pause_miniPlayer"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="10dp"
+            android:layout_toStartOf="@+id/skip_next_bottom"
+            android:src="@drawable/ic_play_btn"
+            app:fabSize="mini"
+            android:layout_centerVertical="true"/>
+
+        <TextView
+            android:id="@+id/song_name_miniPlayer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rauch_haus_song"
+            android:textColor="@color/white"
+            android:layout_marginTop="5dp"
+            android:layout_marginStart="15dp"
+            android:layout_toEndOf="@id/bottom_album_art"
+            android:textSize="15sp"
+            android:maxLines="1"
+            android:layout_toStartOf="@id/play_pause_miniPlayer"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
+            android:scrollHorizontally="true"/>
+
+        <TextView
+            android:id="@+id/song_artist_miniPlayer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ton_steine_scherben"
+            android:textColor="@color/white"
+            android:layout_marginTop="5dp"
+            android:layout_marginStart="15dp"
+            android:layout_toEndOf="@id/bottom_album_art"
+            android:layout_below="@id/song_name_miniPlayer"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:layout_toStartOf="@id/play_pause_miniPlayer"/>
+
+    </RelativeLayout>
+
+</FrameLayout>

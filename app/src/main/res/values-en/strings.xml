@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Berlin Music Player</string>
+    <string name="rewind">Rewind</string>
+    <string name="forward">Forward</string>
+    <string name="end">end</string>
+    <string name="start">start</string>
+    <string name="albumart">Album Art</string>
+    <string name="repeat">Repeat</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="alben">Albums</string>
+    <string name="funkturm">Funkturm</string>
+    <string name="action_shuffle_all">Shuffle All Songs</string>
+    <string name="loeschen">Loeschen</string>
+    <string name="suche">Suche</string>
+    <string name="sort_by">Sortieren</string>
+    <string name="alphabetic">Alphabetisch</string>
+    <string name="date">Datum</string>
+    <string name="ton_steine_scherben">Ton Steine Scherben</string>
+    <string name="add_to_playlist">add_2_playlist</string>
+</resources>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="110dp"
+    android:background="@drawable/miniplayer_background"
+    android:padding="8dp"
+    android:id="@+id/widget_player">
+
+    <!-- BLOCK 1: Das Album Cover links -->
+    <ImageView
+        android:id="@+id/imageView_cover"
+        android:layout_width="94dp"
+        android:layout_height="94dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_play_btn"
+        android:padding="4dp"/>
+
+    <!-- BLOCK 2: Die Text-Felder rechts vom Cover -->
+    <TextView
+        android:id="@+id/textView_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/imageView_cover"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="@string/rauch_haus_song"
+        android:textColor="@android:color/white"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textView_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/imageView_cover"
+        android:layout_below="@id/textView_title"
+        android:layout_marginStart="10dp"
+        android:maxLines="1"
+        android:text="@string/ton_steine_scherben"
+        android:textColor="@android:color/white"
+        android:textSize="13sp" />
+
+    <!-- BLOCK 3: Die Button-Leiste unten, sauber zentriert -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/imageView_cover"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@id/textView_subtitle"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/widget_image_previous"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_notif_backward"
+            android:layout_marginEnd="6dp"/>
+
+        <ImageView
+            android:id="@+id/widget_image_playpause"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="7dp"
+            android:layout_marginEnd="7dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_notif_pause" />
+
+        <ImageView
+            android:id="@+id/widget_image_next"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_notif_forward"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+</RelativeLayout>

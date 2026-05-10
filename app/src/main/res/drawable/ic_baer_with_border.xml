@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><!-- Schicht 1: Der weiße Hintergrund (der "Rand") -->
+    <!-- Wir definieren einen weißen Kreis. -->
+    <item>
+        <shape android:shape="oval"> <!-- 'oval' für einen Kreis, 'rectangle' für ein Viereck -->
+            <solid android:color="@color/lightgreen" />
+            <!-- Optional: dickerer Rand-->
+            <!-- <stroke android:width="2dp" android:color="@color/white" /> -->
+        </shape>
+    </item>
+
+    <!-- Schicht 2: Bären-Icon -->
+    <!-- Es wird über den weißen Kreis gelegt. -->
+    <item
+        android:drawable="@drawable/ic_baer"
+        android:top="4dp"
+        android:bottom="4dp"
+        android:left="4dp"
+        android:right="4dp" />
+
+</layer-list>

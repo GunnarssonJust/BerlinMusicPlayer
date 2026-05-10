@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:width="28dp"
+        android:height="28dp">
+        <shape android:shape="oval"> <!-- "oval" für einen Kreis -->
+            <solid android:color="@color/white" />
+            <!-- Optional: Ein kleiner Rand um den Kreis selbst -->
+            <stroke android:width="2dp" android:color="@color/red" />
+        </shape>
+    </item>
+
+    <item
+        android:drawable="@drawable/berlin_baer_vorwaerts"
+        android:width="25dp"
+        android:height="20dp"
+        android:start="3dp"
+        android:top="4dp"
+         />
+
+</layer-list>

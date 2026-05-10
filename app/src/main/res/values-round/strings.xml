@@ -1,0 +1,14 @@
+<resources>
+    <string name="loeschen">Loeschen</string>
+    <string name="suche">Suche</string>
+    <string name="sort_by">Sortieren</string>
+    <string name="alphabetic">Alphabetisch</string>
+    <string name="date">Datum</string>
+    <string name="ton_steine_scherben">Ton Steine Scherben</string>
+    <string name="zur_playlist_hinzufuegen">Zur Playlist hinzufügen</string>
+    <string name="album">Album</string>
+    <string name="kuenstler">Künstler</string>
+    <string name="interpr">Interpret</string>
+    <string name="interpret">Interpret</string>
+    <string name="add_to_playlist">add_2_playlist</string>
+</resources>

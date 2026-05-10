@@ -1,0 +1,22 @@
+<resources>
+
+    <style name="Widget.BerlinMusicPlayer.AppWidget.Container" parent="android:Widget">
+        <item name="android:id">@android:id/background</item>
+        <item name="android:background">?android:attr/colorBackground</item>
+    </style>
+
+    <style name="Widget.BerlinMusicPlayer.AppWidget.InnerView" parent="android:Widget">
+        <item name="android:background">?android:attr/colorBackground</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+    <style name="FastScrollBubbleTextStyle">
+        <item name="fastScrollBubbleColor">@color/darkestgreen</item>
+        <item name="fastScrollBubbleTextColor">@android:color/white</item>
+        <item name="fastScrollHandleColor">@color/red</item>
+    </style>
+
+    <style name="CustomOverflowStyle" parent="Widget.AppCompat.Light.ActionButton.Overflow">
+        <item name="android:src">@drawable/ic_gate</item>
+    </style>
+
+</resources>

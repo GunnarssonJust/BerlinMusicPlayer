@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_open_album"
+        android:title="Album"
+        android:icon="@drawable/ic_baer"
+        />
+    <item
+        android:id="@+id/menu_open_artist"
+        android:title="Interpret"
+        android:icon="@drawable/ic_adler"
+        />
+    <item
+        android:id="@+id/search_option"
+        android:title="@string/suche"
+        android:icon="@drawable/ic_search"
+        app:showAsAction="ifRoom"/>
+</menu>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_player"
+    tools:context=".AlbumDetails">
+
+    <ImageView
+        android:id="@+id/artistPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:src="@drawable/ic_play_btn"
+        android:scaleType="centerCrop" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/artist_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/artistPhoto"/>
+
+
+</RelativeLayout>

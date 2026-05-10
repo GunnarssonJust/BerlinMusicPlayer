@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    tools:ignore="MissingPrefix"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/berlin_wall"
+    tools:context=".SongsFragment">
+
+    <!-- FAST SCROLLER (SimpleCity Version) -->
+    <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@id/letter_index"
+        android:background="#99000000"
+        android:scrollbars="none"
+
+        app:fastScrollBubbleColor="@color/red"
+        app:fastScrollBubbleTextColor="@color/white"
+        app:fastScrollHandleColor="@color/green"
+        />
+
+    <!-- LETTER INDEX -->
+    <LinearLayout
+        android:id="@+id/letter_index"
+        android:layout_width="26dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="3dp"
+        android:background="@color/darkestgreen" />
+
+    <TextView
+        android:id="@+id/letter_popup"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:textSize="60sp"
+        android:textColor="@android:color/white"
+        android:background="@drawable/popup_bubble_bg"
+        android:visibility="gone"
+        android:elevation="10dp" />
+
+    <!-- SHUFFLE BUTTON -->
+    <ImageButton
+        android:id="@+id/shuffle_all_songs"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/letter_index"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="40dp"
+
+        android:background="@drawable/ic_baseline_panorama_fish_eye_24"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@drawable/ic_shuffle_green"
+        android:contentDescription="@string/action_shuffle_all"/>
+</RelativeLayout>

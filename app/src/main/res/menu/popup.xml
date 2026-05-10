@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:title="@string/loeschen"
+        android:id="@+id/delete"
+        app:showAsAction="never"/>
+    <item
+        android:title="@string/zur_playlist_hinzufuegen"
+        android:id="@+id/add_to_playlist"
+        app:showAsAction="never"/>
+    <item
+        android:title="@string/album"
+        android:id="@+id/album_link"
+        app:showAsAction="never"/>
+    <item
+        android:title="@string/interpret"
+        android:id="@+id/artist_link"
+        app:showAsAction="never"/>
+</menu>
