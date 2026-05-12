@@ -39,6 +39,10 @@
     <string name="interpr">Interpret</string>
     <string name="interpret">Interpret</string>
     <string name="add_to_playlist">add_2_playlist</string>
+    <string name="year">Year</string>
+    <string name="unbekanntes_jahr">Unbekanntes Jahr</string>
+    <string name="unbekanntes_album">Kein Albumname</string>
+    <string name="artist">Interpret</string>
 
 
 </resources>

@@ -1,15 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/im_molecule_man"
     tools:context=".ArtistFragment">
 
-    <androidx.recyclerview.widget.RecyclerView
+    <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
         android:id="@+id/recyclerView_artist"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/bg_color_header_glow"
+        android:layout_toStartOf="@+id/letter_index_artist"
         />
 
-</FrameLayout>
+    <!-- Letter Index rechts, durch die Liste der Künstler scrollen.. last change 10.05.26-->
+    <LinearLayout
+        android:id="@+id/letter_index_artist"
+        android:layout_width="26dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="3dp"
+        android:background="@color/darkestgreen" />
+
+    <TextView
+        android:id="@+id/letter_popup_artist"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:textSize="60sp"
+        android:textColor="@color/red"
+        android:background="@drawable/popup_bubble_bg_dark"
+        android:visibility="gone"
+        android:elevation="10dp" />
+</RelativeLayout>

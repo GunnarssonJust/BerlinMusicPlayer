@@ -4,24 +4,59 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/darkestgreen"
+    android:background="@drawable/brbg_gate_dim"
     tools:context=".AlbumDetails">
 
     <ImageView
         android:id="@+id/albumPhoto"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
         android:src="@drawable/ic_play_btn"
         android:scaleType="centerCrop"
         android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        />
+    <TextView
+        android:id="@+id/album_name"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_below="@+id/albumPhoto"
+        android:text="@string/album"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        android:gravity="center"
+        />
+
+    <TextView
+        android:id="@+id/artist"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_below="@+id/album_name"
+        android:text="@string/artist"
+        android:textColor="@color/white"
+        android:gravity="center"
+        />
+    <TextView
+        android:id="@+id/album_details_year"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
+        android:layout_below="@+id/artist"
+        android:text="@string/year"
+        android:textColor="@color/white"
+        android:gravity="center"
         />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/album_recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/albumPhoto"
-        android:layout_marginTop="30dp" />
+        android:layout_below="@id/album_details_year"
+        android:layout_marginTop="10dp"
+        />
 
 
 </RelativeLayout>

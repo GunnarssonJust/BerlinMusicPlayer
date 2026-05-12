@@ -60,28 +60,50 @@ public class ArtistAlbumsFragment extends Fragment {
 
         String[] projection = {
                 MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ALBUM_ID
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.YEAR,
+                //MediaStore.Audio.Media.GENRE,
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.SIZE
         };
 
         try (Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder)) {
             if (cursor != null) {
+                int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
+                //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
+                int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
+                int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
+
                 while (cursor.moveToNext()) {
-                    String album = cursor.getString(0);
+                    String album = cursor.getString(albumColumn);
                     // Jedes Album nur einmal hinzufügen
                     if (!addedAlbums.contains(album)) {
                         addedAlbums.add(album);
-                        String title = cursor.getString(1);
-                        String duration = cursor.getString(2);
-                        String path = cursor.getString(3);
-                        String artist = cursor.getString(4);
-                        String id = cursor.getString(5);
-                        String albumId = cursor.getString(6);
-                        albumList.add(new MusicFiles(path, title, artist, album, duration, id, albumId));
+                        String title = cursor.getString(titleIdx);
+                        String duration = cursor.getString(durationIdx);
+                        String path = cursor.getString(pathIdx);
+                        String artist = cursor.getString(artistIdx);
+                        String id = cursor.getString(idIdx);
+                        String albumId = cursor.getString(albumIdIdx);
+                        String albumYear = cursor.getString(albumYearIdx);
+                        //String albumgenre = cursor.getString(albumGenreIdx);
+                        long dateAdded = cursor.getLong(dateAddedIdx);
+                        long size = cursor.getLong(sizeIdx);
+
+                        albumList.add(new MusicFiles(path, title, artist, album, duration, id, albumId,albumYear,dateAdded,size));
                     }
                 }
             }

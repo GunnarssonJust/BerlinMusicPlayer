@@ -6,10 +6,33 @@
     android:background="@drawable/siegessaeule"
     tools:context=".AlbumFragment">
 
-    <androidx.recyclerview.widget.RecyclerView
+    <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#77000000"
+        android:layout_toStartOf="@+id/letter_index_album"
+        android:background="#11000000"
         />
+    <!-- Letter Index rechts durch die Liste der Alben scrollen...-->
+    <LinearLayout
+        android:id="@+id/letter_index_album"
+        android:layout_width="26dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="3dp"
+        android:background="@color/darkestgreen" />
+
+    <TextView
+        android:id="@+id/letter_popup_album"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:textSize="60sp"
+        android:textColor="@color/red"
+        android:background="@drawable/popup_bubble_bg_dark"
+        android:visibility="gone"
+        android:elevation="10dp" />
 </RelativeLayout>

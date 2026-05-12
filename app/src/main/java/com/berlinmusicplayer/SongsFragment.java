@@ -1,5 +1,6 @@
 package com.berlinmusicplayer;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -60,7 +61,7 @@ public class SongsFragment extends Fragment {
 
 
         // Letter-Index + Popup
-        setupLetterIndex(letterIndex);
+        setupLetterIndex();
 
         // Shuffle-Button
         shuffleButton.setOnClickListener(v -> {
@@ -129,41 +130,42 @@ public class SongsFragment extends Fragment {
 
         buildLetterIndex();
     }
-	 private void setupLetterIndex(LinearLayout letterIndex) {
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupLetterIndex() {
+        // ← Buchstaben programmatisch hinzufügen!
         String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
         for (char c : alphabet.toCharArray()) {
             TextView letter = new TextView(requireContext());
             letter.setText(String.valueOf(c));
-            letter.setTextSize(13);
+            letter.setTextSize(10);
             letter.setTextColor(Color.WHITE);
-            letter.setPadding(4, 4, 4, 4);
+            letter.setPadding(2, 1, 2, 1);
             letter.setGravity(Gravity.CENTER);
-														 
+            letter.setTypeface(null, android.graphics.Typeface.BOLD);
 
-            letter.setOnTouchListener((v, event) -> {
-                String selectedLetter = ((TextView) v).getText().toString();
-
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                    case MotionEvent.ACTION_MOVE:
-                        scrollToLetter(selectedLetter);
-                        showPopupBubble(selectedLetter);
-																							
-																							   
-							  
-
-											   
-												   
-																
-																  
-                        break;
-                }
-                return true;
-            });
-
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0, 1f);  // ← Gleichmäßig verteilen
+            letter.setLayoutParams(params);
             letterIndex.addView(letter);
         }
+
+        // Touch auf dem gesamten LinearLayout
+        letterIndex.setOnTouchListener((v, event) -> {
+            int y = (int) event.getY();
+            int height = letterIndex.getHeight();
+            int index = Math.max(0, Math.min((y * 26) / height, 25));
+            String letter = String.valueOf((char) ('A' + index));
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    scrollToLetter(letter);
+                    showPopupBubble(letter);
+                    break;
+            }
+            return true;
+        });
     }
 
     private void showPopupBubble(String letter) {

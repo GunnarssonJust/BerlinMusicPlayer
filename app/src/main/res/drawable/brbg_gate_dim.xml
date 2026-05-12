@@ -1,0 +1,9 @@
+<!-- res/drawable/berlin_wall_dim.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/im_brbg_gate"/>
+    <item>
+        <shape>
+            <solid android:color="#bb000000"/>  ← Abdunkelung
+        </shape>
+    </item>
+</layer-list>

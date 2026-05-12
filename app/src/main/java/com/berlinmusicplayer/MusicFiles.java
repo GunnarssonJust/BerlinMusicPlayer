@@ -15,8 +15,12 @@ public class MusicFiles implements Parcelable {
     private String duration;
     private String id;
     private String albumId;
+    private String year;
+    private Long dateAdded;
+    private Long size;
 
-    public MusicFiles(String path, String title, String artist, String album, String duration, String id, String albumId) {
+
+    public MusicFiles(String path, String title, String artist, String album, String duration, String id, String albumId, String year,long dateAdded,long size) {
         this.path = path;
         this.title = title;
         this.artist = artist;
@@ -24,6 +28,9 @@ public class MusicFiles implements Parcelable {
         this.duration = duration;
         this.id = id;
         this.albumId = albumId;
+        this.year = year;
+        this.dateAdded = dateAdded;
+        this.size = size;
     }
 
     public MusicFiles() {
@@ -77,8 +84,16 @@ public class MusicFiles implements Parcelable {
     public void setDuration(String duration) {
         this.duration = duration;
     }
+    public String getYear() {return year;}
 
+    public void setYear(String year) {this.year = year;}
 
+    public long getDateAdded() {
+        return dateAdded;
+    }
+    public long getSize() {
+        return size;
+    }
     @Override
     public int describeContents() {
         return 0;
@@ -93,6 +108,10 @@ public class MusicFiles implements Parcelable {
         dest.writeString(duration);
         dest.writeString(id);
         dest.writeString(albumId);
+        dest.writeString(year);
+        //dest.writeString(genre);
+        dest.writeLong(dateAdded);
+        dest.writeLong(size);
     }
 
     protected MusicFiles(Parcel in){
@@ -103,6 +122,10 @@ public class MusicFiles implements Parcelable {
         duration = in.readString();
         id = in.readString();
         albumId = in.readString();
+        year = in.readString();
+        //genre = in.readString();
+        dateAdded = in.readLong();
+        size = in.readLong();
     }
     public static final Creator<MusicFiles> CREATOR = new Creator<MusicFiles>() {
         @Override
@@ -115,4 +138,5 @@ public class MusicFiles implements Parcelable {
             return new MusicFiles[size];
         }
     };
+
 }

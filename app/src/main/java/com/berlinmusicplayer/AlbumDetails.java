@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
@@ -22,6 +23,7 @@ public class AlbumDetails extends AppCompatActivity {
     RecyclerView recyclerView;
     ImageView albumPhoto;
     String albumName;
+    TextView album_Name,album_artist, albumYear;
     int songID;
     ArrayList<MusicFiles> albumSongs = new ArrayList<>();
     AlbumDetailsAdapter albumDetailsAdapter;
@@ -34,8 +36,20 @@ public class AlbumDetails extends AppCompatActivity {
         recyclerView = findViewById(R.id.album_recyclerView);
         albumPhoto = findViewById(R.id.albumPhoto);
         albumName = getIntent().getStringExtra("albumName");
+        album_Name = findViewById(R.id.album_name);
+        album_artist = findViewById(R.id.artist);
+        albumYear = findViewById(R.id.album_details_year);
 
         albumSongs = getAlbumSongs(this, albumName);
+
+        if(!albumSongs.isEmpty()&& albumSongs.get(0).getYear() != null){
+            album_Name.setText(albumSongs.get(0).getAlbum());
+            album_artist.setText(albumSongs.get(0).getArtist());
+            albumYear.setText(albumSongs.get(0).getYear());
+        }else{
+            album_Name.setText(R.string.unbekanntes_album);
+            albumYear.setText(R.string.unbekanntes_jahr);
+        }
 
         if (!albumSongs.isEmpty()) {
             try {
@@ -47,6 +61,7 @@ public class AlbumDetails extends AppCompatActivity {
                         .placeholder(R.mipmap.ic_play)
                         .error(R.mipmap.ic_play)
                         .into(albumPhoto);
+                albumYear.setText(albumSongs.get(0).getYear());
             } catch (NumberFormatException e) {
                 Glide.with(this).load(R.mipmap.ic_play).into(albumPhoto);
             }
@@ -100,7 +115,9 @@ public class AlbumDetails extends AppCompatActivity {
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ALBUM_ID
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.YEAR,
+                //MediaStore.Audio.Media.GENRE existiert wohl nicht mehr
         };
 
         Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder);
@@ -114,9 +131,14 @@ public class AlbumDetails extends AppCompatActivity {
                 String artist = cursor.getString(4);
                 String id = cursor.getString(5);
                 String albumId = cursor.getString(6);
+                String albumYear = cursor.getString(7);
+                //String albumgenre = cursor.getString(8);
+                long dateAdded = System.currentTimeMillis();
+                long size = new java.io.File(path).length();
 
 
-                MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id,albumId);
+
+                MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id,albumId,albumYear,dateAdded,size);
                 albumSongList.add(musicFile);
             }
             cursor.close();

@@ -12,9 +12,11 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -201,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             if (path != null) {
                 String artist = preferences.getString(ARTIST_NAME, "");
                 String songTitle = preferences.getString(SONG_NAME, "");
-                MusicFiles lastPlayedFile = new MusicFiles(path, songTitle, artist, "", "", "", "");
+                MusicFiles lastPlayedFile = new MusicFiles(path, songTitle, artist, "", "", "", "","",0,0);
                 bottomPlayerFragment.updateNowPlayingUI(lastPlayedFile, false);
                 bottomPlayerFragment.getView().setVisibility(View.VISIBLE);
             } else {
@@ -329,7 +331,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 case 3:
                     return "Playlists";
                 case 4:
-                    return "Wiedergabe";
+                    return "Zuletzt";
                 default:
                     return "Titel";
             }
@@ -373,19 +375,35 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences.Editor editor = getSharedPreferences(MY_SORT_PREF, MODE_PRIVATE).edit();
         int itemId = item.getItemId();
-        if (itemId == R.id.by_name) {
-            editor.putString("sorting", "sortByName");
-        } else if (itemId == R.id.by_date) {
-            editor.putString("sorting", "sortByDate");
-        } else if (itemId == R.id.by_size) {
-            editor.putString("sorting", "sortBySize");
-        }
+
+        // 1. Präferenz speichern
+        SharedPreferences.Editor editor = getSharedPreferences(MY_SORT_PREF, MODE_PRIVATE).edit();
+        if (itemId == R.id.by_name) editor.putString("sorting", "sortByName");
+        else if (itemId == R.id.by_date) editor.putString("sorting", "sortByDate");
+        else if (itemId == R.id.by_size) editor.putString("sorting", "sortBySize");
         editor.apply();
 
-        // Neu laden und UI aktualisieren
-        recreate(); // Einfachste Methode, um alles neu zu laden und die Sortierung anzuwenden
+        // 2. Neu laden im Background — kein recreate() mehr!
+        new Thread(() -> {
+            // ← Neue Liste erstellen, NICHT die alte leeren!
+            ArrayList<MusicFiles> sorted = getAllAudio();
+
+            runOnUiThread(() -> {
+                // ← Erst alles updaten, dann Service informieren
+                musicFiles = sorted;  // ← Atomisch ersetzen!
+
+                // Service auch updaten!
+                if (musicService != null) {
+                    musicService.setMusicFiles(musicFiles);  // ← NEU!
+                }
+
+                if (songsFragment != null) songsFragment.setMusicList(musicFiles);
+                if (albumFragment != null) albumFragment.setAlbumList(musicFiles);
+                if (artistFragment != null) artistFragment.setArtistList(musicFiles);
+            });
+        }).start();
+
         return true;
     }
 

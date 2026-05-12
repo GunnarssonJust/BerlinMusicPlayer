@@ -147,8 +147,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
         final MusicDiffCallback diffCallback = new MusicDiffCallback(this.mFiles, newList);
         final DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
         this.isInSearchMode = isSearchResult;
-        this.mFiles.clear();
-        this.mFiles.addAll(newList);
+        this.mFiles = new ArrayList<>(newList);
         diffResult.dispatchUpdatesTo(this);
     }
 

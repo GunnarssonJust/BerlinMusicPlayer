@@ -113,7 +113,9 @@ public class ArtistActivity extends AppCompatActivity {
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ALBUM_ID
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.YEAR,
+                MediaStore.Audio.Media.GENRE
         };
 
         try (Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder)) {
@@ -126,7 +128,13 @@ public class ArtistActivity extends AppCompatActivity {
                     String artist = cursor.getString(4);
                     String id = cursor.getString(5);
                     String albumId = cursor.getString(6);
-                    songList.add(new MusicFiles(path, title, artist, album, duration, id, albumId));
+                    String albumYear = cursor.getString(7);
+                    //String albumgenre = cursor.getString(8);
+                    long dateAdded = System.currentTimeMillis();
+                    long size = new java.io.File(path).length();
+
+
+                    songList.add(new MusicFiles(path, title, artist, album, duration, id, albumId,albumYear,dateAdded,size));
                 }
             }
         }

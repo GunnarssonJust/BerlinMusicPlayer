@@ -153,7 +153,13 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 super.onSkipToNext();
                 nextBtnClicked();
             }
-
+            @Override
+            public void onSeekTo(long pos) {
+                if (mediaPlayer != null) {
+                    mediaPlayer.seekTo((int) pos);
+                    updateMediaSessionState();  // ← Position sofort updaten!
+                }
+            }
             @Override
             public void onSkipToPrevious() {
                 super.onSkipToPrevious();
@@ -1043,25 +1049,46 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
         String[] projection = {
                 MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ALBUM_ID
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.YEAR,
+                //MediaStore.Audio.Media.GENRE,
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.SIZE
         };
         try (Cursor cursor = getContentResolver().query(uri, projection, null, null, order)) {
             if (cursor != null) {
-                while (cursor.moveToNext()) {
-                    String album = cursor.getString(0);
-                    String title = cursor.getString(1);
-                    String duration = cursor.getString(2);
-                    String path = cursor.getString(3);
-                    String artist = cursor.getString(4);
-                    String id = cursor.getString(5);
-                    String albumId = cursor.getString(6);
+                int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
+                //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
+                int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
+                int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
 
-                    MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id, albumId);
+                while (cursor.moveToNext()) {
+                    String album = cursor.getString(albumColumn);
+                    String title = cursor.getString(titleIdx);
+                    String duration = cursor.getString(durationIdx);
+                    String path = cursor.getString(pathIdx);
+                    String artist = cursor.getString(artistIdx);
+                    String id = cursor.getString(idIdx);
+                    String albumId = cursor.getString(albumIdIdx);
+                    String albumYear = cursor.getString(albumYearIdx);
+                    //String albumgenre = cursor.getString(albumGenreIdx);
+                    long dateAdded = cursor.getLong(dateAddedIdx);
+                    long size = cursor.getLong(sizeIdx);
+
+
+                    MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id, albumId,albumYear, dateAdded, size);
                     tempAudioList.add(musicFile);
                 }
             }
@@ -1241,6 +1268,17 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
+    }
+
+
+    public void setMusicFiles(ArrayList<MusicFiles> newList) {
+        if (newList != null && !newList.isEmpty()) {
+            this.musicFiles = newList;
+            // Position zurücksetzen falls außerhalb der neuen Liste
+            if (position >= newList.size()) {
+                position = 0;
+            }
+        }
     }
 
 }

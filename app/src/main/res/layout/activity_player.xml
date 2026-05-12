@@ -68,51 +68,40 @@
 
     <ImageView
         android:id="@+id/btn_shuffle"
-        android:layout_width="16dp"
-        android:layout_height="16dp"
-        android:layout_gravity="center"
-        android:layout_marginStart="50dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
         android:contentDescription="@string/shuffle"
         android:src="@drawable/ic_shuffle"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
-        app:layout_constraintStart_toEndOf="@+id/songCurrentDurationLabel"
+        app:layout_constraintEnd_toStartOf="@+id/btn_add_2_playlist"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/album_image"
-        app:layout_constraintVertical_bias="0.818" />
-
+        app:layout_constraintVertical_bias="0.8"/>
 
     <ImageView
         android:id="@+id/btn_add_2_playlist"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginStart="30dp"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
         android:contentDescription="@string/add_to_playlist"
         android:src="@drawable/ic_add_to_playlist"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintEnd_toStartOf="@+id/btn_repeat"
-        app:layout_constraintHorizontal_bias="0.507"
         app:layout_constraintStart_toEndOf="@+id/btn_shuffle"
         app:layout_constraintTop_toBottomOf="@+id/album_image"
-        app:layout_constraintVertical_bias="0.797" />
+        app:layout_constraintVertical_bias="0.8"/>
 
     <ImageView
         android:id="@+id/btn_repeat"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_marginEnd="50dp"
-        android:layout_marginStart="124dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
         android:contentDescription="@string/repeat"
         android:src="@drawable/ic_repeat"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
-        app:layout_constraintEnd_toStartOf="@+id/songRemainingDurationLabel"
-        app:layout_constraintHorizontal_bias="0.589"
-        app:layout_constraintStart_toEndOf="@+id/btn_shuffle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn_add_2_playlist"
         app:layout_constraintTop_toBottomOf="@+id/album_image"
-        app:layout_constraintVertical_bias="0.828" />
+        app:layout_constraintVertical_bias="0.8"/>
 
     <RelativeLayout
         android:id="@+id/RelLayout"

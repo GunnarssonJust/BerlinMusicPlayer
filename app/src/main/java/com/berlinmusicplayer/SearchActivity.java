@@ -112,7 +112,9 @@ public class SearchActivity extends AppCompatActivity {
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ALBUM_ID
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.YEAR,
+                //MediaStore.Audio.Media.GENRE
         };
 
         // SQL LIKE direkt im MediaStore — kein Java-Loop über 34.000 Songs!
@@ -144,8 +146,12 @@ public class SearchActivity extends AppCompatActivity {
                     String artist   = cursor.getString(4);
                     String id       = cursor.getString(5);
                     String albumId  = cursor.getString(6);
+                    String albumYear = cursor.getString(7);
+                    //String albumgenre = cursor.getString(8);
+                    long dateAdded = cursor.getLong(9);
+                    long size = cursor.getLong(10);
 
-                    MusicFiles song = new MusicFiles(path, title, artist, album, duration, id, albumId);
+                    MusicFiles song = new MusicFiles(path, title, artist, album, duration, id, albumId,albumYear,dateAdded,size);
 
                     // Song-Treffer
                     if (title != null && title.toLowerCase().contains(lowerQuery)) {

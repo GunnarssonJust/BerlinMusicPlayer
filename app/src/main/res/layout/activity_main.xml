@@ -33,6 +33,7 @@
         app:tabPadding="2dp"
         app:tabIndicatorHeight="40dp"
         app:tabIndicator="@drawable/ic_adler"
+        app:tabTextAppearance="@style/MainActivityTabLayout"
         app:layout_constraintTop_toBottomOf="@id/main_toolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
