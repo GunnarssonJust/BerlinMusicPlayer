@@ -19,22 +19,66 @@
         app:title="@string/app_name"
         app:titleTextColor="@color/lightred"/>
 
-    <ImageView
-        android:id="@+id/album_image"
-        android:layout_width="match_parent"
-        android:padding="15dp"
-        android:layout_height="350dp"
-        android:layout_centerHorizontal="true"
-        android:contentDescription="@string/albumart"
-        android:src="@mipmap/ic_play_pressed"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- VINYL CONTAINER: dreht sich als Ganzes              -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <FrameLayout
+        android:id="@+id/vinyl_container"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/player_toolbar"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.043"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <!--android:thumbTintMode="src_over"-->
+        <!-- 1. Vinyl SVG mit Rillen (volle Größe, dreht sich) -->
+        <ImageView
+            android:id="@+id/vinyl_ring"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
+            android:layout_gravity="center"
+            android:src="@drawable/vinyl_record"
+            android:contentDescription="@string/albumart"
+            android:visibility="invisible"/>
+
+        <!-- 2. Album Cover (rund, zentriert, 152dp = Cover-Bereich im SVG) -->
+        <ImageView
+            android:id="@+id/album_image"
+            android:layout_width="152dp"
+            android:layout_height="152dp"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"
+            android:src="@mipmap/ic_play_pressed"
+            android:contentDescription="@string/albumart"/>
+
+        <!-- 3. Mittelloch (über dem Cover, 20dp) -->
+        <ImageView
+            android:id="@+id/vinyl_hole"
+            android:visibility="invisible"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:src="@drawable/vinyl_center_hole"
+            android:contentDescription="@string/albumart"/>
+
+    </FrameLayout>
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- TONARM — über vinyl_container, oben rechts          -->
+    <!-- Nur sichtbar im Vinyl-Design!                       -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <ImageView
+        android:id="@+id/vinyl_tonearm"
+        android:layout_width="120dp"
+        android:layout_height="160dp"
+        android:src="@drawable/vinyl_tonearm"
+        android:visibility="invisible"
+        android:contentDescription="@string/albumart"
+        android:layout_marginEnd="-48dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="@id/vinyl_container"
+        app:layout_constraintTop_toTopOf="@id/vinyl_container"/>
+    <!-- ════════════════════════════════════════════════════ -->
 
     <SeekBar
         android:id="@+id/seekBar"
@@ -46,11 +90,10 @@
         android:padding="8dp"
         android:progressDrawable="@drawable/seekbar"
         android:thumb="@drawable/ic_seekbar_ampelmann_green"
-
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/album_image" />
+        app:layout_constraintTop_toBottomOf="@id/vinyl_container" />
 
     <TextView
         android:id="@+id/songCurrentDurationLabel"
@@ -59,11 +102,11 @@
         android:layout_marginStart="16dp"
         android:layout_marginBottom="4dp"
         android:gravity="start"
-        android:text="@string/start"
+        android:text="@string/start_time"
         android:textColor="@color/red"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/album_image"
+        app:layout_constraintTop_toBottomOf="@+id/vinyl_container"
         app:layout_constraintVertical_bias="0.894" />
 
     <ImageView
@@ -76,7 +119,7 @@
         app:layout_constraintEnd_toStartOf="@+id/btn_add_2_playlist"
         app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/album_image"
+        app:layout_constraintTop_toBottomOf="@+id/vinyl_container"
         app:layout_constraintVertical_bias="0.8"/>
 
     <ImageView
@@ -88,7 +131,7 @@
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintEnd_toStartOf="@+id/btn_repeat"
         app:layout_constraintStart_toEndOf="@+id/btn_shuffle"
-        app:layout_constraintTop_toBottomOf="@+id/album_image"
+        app:layout_constraintTop_toBottomOf="@+id/vinyl_container"
         app:layout_constraintVertical_bias="0.8"/>
 
     <ImageView
@@ -100,94 +143,108 @@
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_add_2_playlist"
-        app:layout_constraintTop_toBottomOf="@+id/album_image"
+        app:layout_constraintTop_toBottomOf="@+id/vinyl_container"
         app:layout_constraintVertical_bias="0.8"/>
 
     <RelativeLayout
         android:id="@+id/RelLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="110dp"
         android:layout_margin="1dp"
         android:background="@drawable/bg_color_footer"
-        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/songArtist"
-        app:layout_constraintVertical_bias="0.466">
+        app:layout_constraintTop_toBottomOf="@id/songArtist">
 
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- BERLIN SKYLINE — alle am unteren Rand      -->
+        <!-- ═══════════════════════════════════════════ -->
+
+        <!-- Funkturm — ganz links -->
         <ImageView
-            android:layout_width="44dp"
-            android:layout_height="91dp"
+            android:layout_width="54dp"
+            android:layout_height="65dp"
             android:layout_alignParentStart="true"
-            android:layout_gravity="bottom"
-            android:layout_marginTop="10dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="0dp"
             android:contentDescription="@string/funkturm"
-            android:paddingTop="20dp"
             android:scaleType="fitXY"
             android:src="@drawable/funkturm" />
 
+        <!-- Gedächtniskirche — links von Mitte (Charlottenburg/West) -->
+        <ImageView
+            android:id="@+id/gedaechtniskirche"
+            android:layout_width="80dp"
+            android:layout_height="55dp"
+            android:layout_alignParentBottom="true"
+            android:layout_toStartOf="@+id/play_pause"
+            android:layout_marginEnd="-2dp"
+            android:scaleType="fitEnd"
+            android:src="@drawable/im_gedaechtniskirche"/>
+
+        <!-- Reichstag — rechts von Mitte (Mitte/Ost) -->
+        <ImageView
+            android:id="@+id/reichstag"
+            android:layout_width="80dp"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@+id/play_pause"
+            android:layout_marginStart="4dp"
+            android:scaleType="fitStart"
+            android:src="@drawable/im_reichstag"/>
+
+        <!-- Fernsehturm — ganz rechts -->
+        <ImageView
+            android:layout_width="50dp"
+            android:layout_height="100dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="0dp"
+            android:contentDescription="@string/fernsehturm"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_fernsehturm" />
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- BUTTONS — symmetrisch zentriert            -->
+        <!-- ═══════════════════════════════════════════ -->
+
+        <!-- Play/Pause — exakt in der Mitte -->
+        <ImageView
+            android:id="@+id/play_pause"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@mipmap/ic_play_pressed"/>
+
+        <!-- Previous — links vom Play-Button, gleicher Abstand -->
         <ImageView
             android:id="@+id/rewind"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_centerInParent="true"
-            android:layout_gravity="center"
-            android:layout_marginStart="57dp"
-            android:layout_marginTop="28dp"
-            android:layout_marginEnd="22dp"
-            android:contentDescription="@string/rewind"
-            android:src="@mipmap/ic_backward"
-            android:text="@string/rewind" />
-
-        <ImageView
-            android:id="@+id/play_pause"
-            android:layout_width="117dp"
-            android:layout_height="82dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginStart="145dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="147dp"
+            android:layout_centerVertical="true"
             android:layout_marginBottom="8dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:src="@mipmap/ic_play_pressed" />
+            android:layout_marginEnd="65dp"
+            android:layout_toStartOf="@id/play_pause"
+            android:contentDescription="@string/rewind"
+            android:src="@mipmap/ic_backward"/>
 
+        <!-- Next — rechts vom Play-Button, gleicher Abstand -->
         <ImageView
             android:id="@+id/forward"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerInParent="true"
             android:layout_centerVertical="true"
-            android:layout_gravity="center"
-            android:layout_marginStart="41dp"
-            android:layout_marginEnd="60dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="65dp"
+            android:layout_toEndOf="@id/play_pause"
             android:contentDescription="@string/forward"
-            android:src="@mipmap/ic_forward" />
-
-        <ImageView
-            android:layout_width="85dp"
-            android:layout_height="101dp"
-            android:layout_alignTop="@+id/play_pause"
-            android:layout_alignBottom="@+id/play_pause"
-            android:layout_alignParentEnd="true"
-            android:layout_gravity="bottom"
-
-            android:layout_marginTop="-11dp"
-            android:layout_marginEnd="-8dp"
-            android:layout_marginBottom="-8dp"
-            android:contentDescription="@string/fernsehturm"
-            android:foregroundGravity="bottom"
-            android:gravity="bottom"
-            android:paddingTop="10dp"
-            android:scaleType="fitXY"
-            android:src="@drawable/ic_fernsehturm" />
+            android:src="@mipmap/ic_forward"/>
 
     </RelativeLayout>
 
@@ -250,6 +307,7 @@
         android:textColor="@color/darkgreen"
         app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/album_image"
+        app:layout_constraintTop_toBottomOf="@+id/vinyl_container"
         app:layout_constraintVertical_bias="0.835" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

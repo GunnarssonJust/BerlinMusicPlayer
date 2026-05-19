@@ -1,7 +1,5 @@
 package com.berlinmusicplayer;
 
-import static com.berlinmusicplayer.MainActivity.MY_SORT_PREF;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,21 +12,25 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Outline;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -36,7 +38,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -46,6 +47,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     private static final String TAG = "PlayerActivity";
     TextView song_name, artist, duration_played, duration_total;
     ImageView cover_art, nextBtn, prevBtn, shufflebtn, repeatBtn, playPauseBtn,playListButton;
+    private FrameLayout vinylContainer;
     ConstraintLayout mContainer;
     SeekBar seekBar;
     Toolbar toolbar;
@@ -56,6 +58,10 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     //private Thread playThread, prevThread, nextThread;
     private MusicService musicService;
     Bitmap bitmap;
+    private Animation vinylRotation;
+    private boolean isVinylDesign = false;
+    private float vinylRotationOffset = 0f;
+    private ImageView toneArm;
     //public static final String poS = "POSITION";
 
     @Override
@@ -85,6 +91,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         setSupportActionBar(toolbar);
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_gate));
         mContainer = findViewById(R.id.mContainer);
+        vinylContainer = findViewById(R.id.vinyl_container);
         mContainer.setOnTouchListener(new View.OnTouchListener(){
             private float startY;
             private static final int SWIPE_THRESHOLD = 150;
@@ -128,6 +135,8 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
                 musicService.repeatBtnClicked();
             }
         });
+
+        loadPlayerDesign();
     }
 
     @Override
@@ -157,12 +166,20 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         bindService(intent, this, BIND_AUTO_CREATE);
         if(musicService != null)
             updateUiComponents();
+        if (musicService != null && musicService.isPlaying()) {
+            handler.post(updateSeekbar);
+        }
     }
 
     @Override
     protected void onPause() {
+        //App geht in Hintergrund, neue App, Homebutton geklickt etc.
         super.onPause();
-        unbindService(this);
+        //Seekbar Updates stoppen wenn nicht sichtbar.
+        if (handler != null) {
+            handler.removeCallbacks(updateSeekbar);
+        }
+
     }
 
     @Override
@@ -193,6 +210,13 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         if (D) Log.d(TAG, "Esel PlayerActivity: playPauseBtnClicked");
         if (musicService != null) {
             musicService.playPauseBtnClicked();
+            if (isVinylDesign) {
+                if (musicService.isPlaying()) {
+                    startVinylRotation();
+                } else {
+                    stopVinylRotation();
+                }
+            }
         }
     }
 
@@ -233,6 +257,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         duration_played = findViewById(R.id.songCurrentDurationLabel);
         duration_total = findViewById(R.id.songRemainingDurationLabel);
         cover_art = findViewById(R.id.album_image);
+        toneArm = findViewById(R.id.vinyl_tonearm);
 
         nextBtn = findViewById(R.id.forward);
         prevBtn = findViewById(R.id.rewind);
@@ -256,6 +281,13 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             metaData(Uri.parse(currentSong.getPath()));
         }
         updatePlayPauseButton();
+        if (isVinylDesign) {
+            if (musicService != null && musicService.isPlaying()) {
+                startVinylRotation();
+            } else {
+                stopVinylRotation();
+            }
+        }
     }
 
     void metaData(Uri uri) {
@@ -289,15 +321,17 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         }
 
         if (art != null && art.length > 0) {
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.recycle();
+            }
             bitmap = BitmapFactory.decodeByteArray(art, 0, art.length);
-            ImageAnimation(this, cover_art, bitmap);
+            if (bitmap== null){
+                bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_play_pressed);
+            }
         } else {
-            Glide.with(this)
-                    .asBitmap()
-                    .load(R.mipmap.ic_play_pressed)
-                    .into(cover_art);
-
+            bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_play_pressed);
         }
+        ImageAnimation(this, cover_art, bitmap);
         ConstraintLayout mContainer = findViewById(R.id.mContainer);
         mContainer.setBackgroundResource(R.drawable.bg_player);
         song_name.setTextColor(getColor(R.color.lightred));
@@ -396,18 +430,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         });
 
         // 4. Initialisiere den SeekBar-Updater-Thread
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (musicService != null && musicService.isPlaying()) {
-                    int mCurrentPosition = musicService.getCurrentPosition() / 1000;
-                    seekBar.setProgress(mCurrentPosition);
-                    duration_played.setText(formattedTime(mCurrentPosition));
-                }
-                // Lasse den Handler weiterlaufen, um die SeekBar zu aktualisieren
-                handler.postDelayed(this, 1000);
-            }
-        });
+        handler.post(updateSeekbar);
 
         // 5. Initialen Zustand der Shuffle/Repeat-Buttons setzen
         if (musicService != null) {
@@ -458,18 +481,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         });
 
         // 5. Initialisiere den SeekBar-Updater-Thread
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (musicService != null && musicService.isPlaying()) {
-                    int mCurrentPosition = musicService.getCurrentPosition() / 1000;
-                    seekBar.setProgress(mCurrentPosition);
-                    duration_played.setText(formattedTime(mCurrentPosition));
-                }
-                // Lasse den Handler weiterlaufen, um die SeekBar zu aktualisieren
-                handler.postDelayed(this, 1000);
-            }
-        });
+        handler.post(updateSeekbar);
         shufflebtn.setImageResource(musicService.getShuffleState() ? R.drawable.ic_shuffle_green : R.drawable.ic_shuffle);
         repeatBtn.setImageResource(musicService.getRepeatState() ? R.drawable.ic_repeat_red : R.drawable.ic_repeat);
     }
@@ -555,7 +567,10 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             return true;
-        }
+        }else if(itemId == R.id.menu_share) {}//TODO
+        else if(itemId == R.id.player_design){
+            showPlayerDesignDialog();
+        } else {}//TODO
         return super.onOptionsItemSelected(item);
     }
 
@@ -575,5 +590,144 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         startActivity(intent);
         // Slide-Down Animation
         overridePendingTransition(0, R.anim.slide_down);
+    }
+
+    private final Runnable updateSeekbar = new Runnable() {
+        @Override
+        public void run() {
+            if (musicService != null && musicService.isPlaying()) {
+                int mCurrentPosition = musicService.getCurrentPosition() / 1000;
+                seekBar.setProgress(mCurrentPosition);
+                duration_played.setText(formattedTime(mCurrentPosition));
+            }
+            handler.postDelayed(this, 1000);
+        }
+    };
+
+    private void loadPlayerDesign() {
+        int design = getSharedPreferences("player_prefs", MODE_PRIVATE)
+                .getInt("player_design", 0);
+        applyDesign(design);
+    }
+    // Design anwenden:
+    private void applyDesign(int design) {
+        switch (design) {
+            case 0:
+                applyClassicDesign();
+                break;
+            case 1:
+                applyVinylDesign();
+                break;
+        }
+    }
+
+    // Classic Design (so wie jetzt):
+    private void applyClassicDesign() {
+        isVinylDesign = false;
+        toneArm.setVisibility(View.INVISIBLE);
+        toneArm.clearAnimation();
+        stopVinylRotation();
+        cover_art.setClipToOutline(false);
+        ViewGroup.LayoutParams params = cover_art.getLayoutParams();
+        ViewGroup.LayoutParams containerParams = vinylContainer.getLayoutParams();
+        containerParams.width = dpToPx(320);
+        containerParams.height = dpToPx(320);
+        vinylContainer.setLayoutParams(containerParams);
+        params.width = dpToPx(320);
+        params.height = dpToPx(320);
+        cover_art.setLayoutParams(params);
+        vinylContainer.setVisibility(View.VISIBLE);
+        findViewById(R.id.vinyl_ring).setVisibility(View.INVISIBLE);
+        findViewById(R.id.vinyl_hole).setVisibility(View.INVISIBLE);
+    }
+
+    // Vinyl Design:
+    private void applyVinylDesign() {
+        isVinylDesign = true;
+
+        // ← Container auf 350x350 in der klassischen Ansicht zurücksetzen
+        ViewGroup.LayoutParams containerParams = vinylContainer.getLayoutParams();
+        containerParams.width = dpToPx(280);
+        containerParams.height = dpToPx(280);
+        vinylContainer.setLayoutParams(containerParams);
+
+        // Cover klein und rund!
+        ViewGroup.LayoutParams params = cover_art.getLayoutParams();
+        params.width = dpToPx(152);
+        params.height = dpToPx(152);
+        cover_art.setLayoutParams(params);
+
+        cover_art.setClipToOutline(true);
+        cover_art.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setOval(0, 0, view.getWidth(), view.getHeight());
+            }
+        });
+
+        // vinyl_ring und vinyl_hole zeigen
+        findViewById(R.id.vinyl_ring).setVisibility(View.VISIBLE);
+        findViewById(R.id.vinyl_hole).setVisibility(View.VISIBLE);
+        toneArm.setVisibility(View.VISIBLE);
+        toneArm.setRotation(-25f);
+        vinylRotation = AnimationUtils.loadAnimation(PlayerActivity.this, R.anim.rotate_vinyl);
+        if (musicService != null && musicService.isPlaying()) {
+            startVinylRotation();
+        }
+    }
+
+    // Rotation starten:
+    private void startVinylRotation() {
+        if (!isVinylDesign || vinylRotation == null || vinylContainer == null) return;
+        vinylContainer.startAnimation(vinylRotation);
+        if (!isVinylDesign || vinylRotation == null || vinylContainer == null) return;
+        vinylContainer.startAnimation(vinylRotation);
+        moveToneArmToPlay();  // ← NEU: Arm auf Platte!
+    }
+
+    // Rotation stoppen (Position merken):
+    private void stopVinylRotation() {
+        if (vinylContainer != null) {
+            // Aktuelle Rotation merken für nahtlosen Neustart!
+            vinylRotationOffset = vinylContainer.getRotation();
+            vinylContainer.clearAnimation();
+            }
+            moveToneArmToPause();  // ← NEU: Arm zurückziehen!
+        }
+
+    // Design-Auswahl Dialog — z.B. im Options-Menü aufrufen:
+    private void showPlayerDesignDialog() {
+        String[] designs = {"🎨 Classic", "💿 Vinyl"};
+        int current = getSharedPreferences("player_prefs", MODE_PRIVATE)
+                .getInt("player_design", 0);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Player Design")
+                .setSingleChoiceItems(designs, current, (dialog, which) -> {
+                    getSharedPreferences("player_prefs", MODE_PRIVATE)
+                            .edit()
+                            .putInt("player_design", which)
+                            .apply();
+                    applyDesign(which);
+                    dialog.dismiss();
+                })
+                .show();
+    }
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+    // 5. Tonarm-Animationen:
+    private void moveToneArmToPlay() {
+        if (!isVinylDesign || toneArm == null) return;
+        Animation anim = AnimationUtils.loadAnimation(this, R.anim.tonearm_play);
+        anim.setFillAfter(true);
+        toneArm.startAnimation(anim);
+    }
+
+    private void moveToneArmToPause() {
+        if (!isVinylDesign || toneArm == null) return;
+        Animation anim = AnimationUtils.loadAnimation(this, R.anim.tonearm_pause);
+        anim.setFillAfter(true);
+        toneArm.startAnimation(anim);
     }
 }

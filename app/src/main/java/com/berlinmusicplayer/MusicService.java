@@ -369,14 +369,16 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             SharedPreferences.Editor editor = getSharedPreferences(MUSIC_LAST_PLAYED,MODE_PRIVATE).edit();
             switch (actionName) {
                 case "WIDGET_CLICKED":
-                    // Wenn ein Song geladen ist: MainActivity öffnen
+                    // Wenn ein Song geladen ist: PlayerActivity öffnen
                     if (mediaPlayer != null && position != -1) {
-                        Intent openMainActivity = new Intent(this, MainActivity.class);
-                        openMainActivity.putExtra("targetFragment", "SongsFragment");
-                        openMainActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                        startActivity(openMainActivity);
+                        showNotification(R.drawable.ic_notif_play);
+
+                        Intent openplayerActivity = new Intent(this, PlayerActivity.class);
+                        openplayerActivity.putExtra("sender", "widget");
+                        openplayerActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(openplayerActivity);
                     }
-                    // Sonst: Letzten Song laden und MainActivity öffnen
+                    // Sonst: PlayerActivity öffnen, Song wird aus SharedPreferences geladen, faLls vorhanden
                     else {
                         SharedPreferences prefs = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
                         int lastPosition = prefs.getInt("currentPosition", -1);
@@ -386,11 +388,16 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                             showNotification(R.drawable.ic_notif_pause);
                             sendWidgetUpdate();
 
-                            // MainActivity öffnen
-                            Intent openMainActivity = new Intent(this, MainActivity.class);
-                            openMainActivity.putExtra("targetFragment", "SongsFragment");
-                            openMainActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(openMainActivity);
+                            // PlayerActivity öffnen
+                            Intent openPlayerActivity = new Intent(this, PlayerActivity.class);
+                            openPlayerActivity.putExtra("targetFragment", "SongsFragment");
+                            openPlayerActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(openPlayerActivity);
+                        }else{// kein Song in SharedPreferences vorhanden, es wird die Songsliste auf der MainActivity geöffnet
+                            Intent mainIntent = new Intent(this, MainActivity.class);
+                            mainIntent.putExtra("targetFragment","SongsFragment");
+                            mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(mainIntent);
                         }
                     }
                     break;

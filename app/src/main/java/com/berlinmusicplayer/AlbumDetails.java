@@ -22,7 +22,7 @@ import java.util.ArrayList;
 public class AlbumDetails extends AppCompatActivity {
     RecyclerView recyclerView;
     ImageView albumPhoto;
-    String albumName;
+    String albumName,albumId;
     TextView album_Name,album_artist, albumYear;
     int songID;
     ArrayList<MusicFiles> albumSongs = new ArrayList<>();
@@ -36,6 +36,7 @@ public class AlbumDetails extends AppCompatActivity {
         recyclerView = findViewById(R.id.album_recyclerView);
         albumPhoto = findViewById(R.id.albumPhoto);
         albumName = getIntent().getStringExtra("albumName");
+        albumId = getIntent().getStringExtra("albumId");
         album_Name = findViewById(R.id.album_name);
         album_artist = findViewById(R.id.artist);
         albumYear = findViewById(R.id.album_details_year);
@@ -53,9 +54,9 @@ public class AlbumDetails extends AppCompatActivity {
 
         if (!albumSongs.isEmpty()) {
             try {
-                long albumId = Long.parseLong(albumSongs.get(0).getAlbumId());
+                long albumIds = Long.parseLong(albumSongs.get(0).getAlbumId());
                 Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
-                Uri albumArtUri = ContentUris.withAppendedId(sArtworkUri, albumId);
+                Uri albumArtUri = ContentUris.withAppendedId(sArtworkUri, albumIds);
                 Glide.with(this)
                         .load(albumArtUri)
                         .placeholder(R.mipmap.ic_play)
@@ -100,9 +101,10 @@ public class AlbumDetails extends AppCompatActivity {
         ArrayList<MusicFiles> albumSongList = new ArrayList<>();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
-        // Wir wollen nur Songs, deren Album-Name dem übergebenen Namen entspricht.
-        String selection = MediaStore.Audio.Media.ALBUM + "=?";
-        String[] selectionArgs = new String[]{albumName};
+        // Wir wollen nur Songs, deren Album-Name und der speziellen ID dem übergebenen Namen entspricht.
+        String selection = MediaStore.Audio.Media.ALBUM + "=? AND " +
+                MediaStore.Audio.Media.ALBUM_ID + "=?";
+        String[] selectionArgs = new String[]{albumName,albumId};
 
         // Sortierung nach der Track-Nummer
         // Die Track-Nummer ist in MediaStore.Audio.Media.TRACK gespeichert
@@ -118,25 +120,36 @@ public class AlbumDetails extends AppCompatActivity {
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.YEAR,
                 //MediaStore.Audio.Media.GENRE existiert wohl nicht mehr
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.SIZE
         };
 
         Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder);
 
         if (cursor != null) {
+            int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+            int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+            int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+            int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+            int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+            int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+            int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+            int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
+            //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
+            int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
+            int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
             while (cursor.moveToNext()) {
-                String album = cursor.getString(0);
-                String title = cursor.getString(1);
-                String duration = cursor.getString(2);
-                String path = cursor.getString(3);
-                String artist = cursor.getString(4);
-                String id = cursor.getString(5);
-                String albumId = cursor.getString(6);
-                String albumYear = cursor.getString(7);
-                //String albumgenre = cursor.getString(8);
-                long dateAdded = System.currentTimeMillis();
-                long size = new java.io.File(path).length();
-
-
+                String album = cursor.getString(albumColumn);
+                String title = cursor.getString(titleIdx);
+                String duration = cursor.getString(durationIdx);
+                String path = cursor.getString(pathIdx);
+                String artist = cursor.getString(artistIdx);
+                String id = cursor.getString(idIdx);
+                String albumId = cursor.getString(albumIdIdx);
+                String albumYear = cursor.getString(albumYearIdx);
+                //String albumgenre = cursor.getString(hier fehlt wassss);
+                long dateAdded = cursor.getLong(dateAddedIdx);
+                long size = cursor.getLong(sizeIdx);
 
                 MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id,albumId,albumYear,dateAdded,size);
                 albumSongList.add(musicFile);

@@ -419,10 +419,11 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             ArrayList<String> duplicateArtistNames = new ArrayList<>();
 
             for (MusicFiles song : musicFiles) {
+                String uniqueKey = song.getAlbum() + "_" + song.getAlbumId();
                 // Alben-Liste erstellen
-                if (!duplicateAlbumNames.contains(song.getAlbum())) {
+                if (!duplicateAlbumNames.contains(uniqueKey)) {
                     albums.add(song);
-                    duplicateAlbumNames.add(song.getAlbum());
+                    duplicateAlbumNames.add(uniqueKey);
                 }
                 // Künstler-Liste erstellen
                 if (!duplicateArtistNames.contains(song.getArtist())) {

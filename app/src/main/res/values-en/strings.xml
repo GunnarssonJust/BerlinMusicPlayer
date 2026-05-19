@@ -8,6 +8,7 @@
     <string name="albumart">Album Art</string>
     <string name="repeat">Repeat</string>
     <string name="shuffle">Shuffle</string>
+    <string name="fernsehturm">TV Tower Berlin</string>
     <string name="alben">Albums</string>
     <string name="funkturm">Funkturm</string>
     <string name="action_shuffle_all">Shuffle All Songs</string>
@@ -16,7 +17,19 @@
     <string name="sort_by">Sortieren</string>
     <string name="alphabetic">Alphabetisch</string>
     <string name="date">Datum</string>
+    <string name="by_size">Size</string>
     <string name="ton_steine_scherben">Ton Steine Scherben</string>
+    <string name="interpret">Artist</string>
     <string name="add_to_playlist">add_2_playlist</string>
     <string name="year">Year</string>
+    <string name="artist">Artist</string>
+    <string name="player_design">Player Design</string>
+    <string name="rio_reiser">Rio Reiser</string>
+    <string name="rauch_haus_song">Rauch House Song</string>
+    <string name="zur_playlist_hinzufuegen">Add To Playlist</string>
+    <string name="kuenstler">Artist</string>
+    <string name="interpr">Artist</string>
+    <string name="unbekanntes_jahr">Unknown Year</string>
+    <string name="unbekanntes_album">No Album Name</string>
+    <string name="teilen">Share</string>
 </resources>

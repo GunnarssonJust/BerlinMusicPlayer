@@ -3,12 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menu_open_album"
-        android:title="Album"
+        android:title="@string/album"
         android:icon="@drawable/ic_baer"
         />
     <item
         android:id="@+id/menu_open_artist"
-        android:title="Interpret"
+        android:title="@string/artist"
         android:icon="@drawable/ic_adler"
         />
     <item
@@ -16,4 +16,16 @@
         android:title="@string/suche"
         android:icon="@drawable/ic_search"
         app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/player_design"
+        android:title="@string/player_design"
+        android:icon="@drawable/ic_baer"
+        app:showAsAction="never"
+        />
+    <item
+        android:id="@+id/menu_share"
+        android:title="@string/teilen"
+        android:icon="@drawable/ic_baer"
+        app:showAsAction="never"
+        />
 </menu>

@@ -1,7 +1,5 @@
 package com.berlinmusicplayer;
 
-import static android.app.PendingIntent.getActivity;
-
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -115,6 +113,8 @@ public class SearchActivity extends AppCompatActivity {
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.YEAR,
                 //MediaStore.Audio.Media.GENRE
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.SIZE
         };
 
         // SQL LIKE direkt im MediaStore — kein Java-Loop über 34.000 Songs!
@@ -126,7 +126,7 @@ public class SearchActivity extends AppCompatActivity {
         String[] selectionArgs = new String[]{
                 "%" + query + "%",
                 "%" + query + "%",
-                "%" + query + "%"
+                "%" + query + "%",
         };
 
         // Max. 100 Ergebnisse — verhindert Überschwemmung bei kurzen Suchwörtern
@@ -137,19 +137,31 @@ public class SearchActivity extends AppCompatActivity {
 
             if (cursor != null) {
                 String lowerQuery = query.toLowerCase();
+                int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
+                int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
+                int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
+
+                // Cursor durchlaufen und Ergebnisse hinzufügen
 
                 while (cursor.moveToNext()) {
-                    String album    = cursor.getString(0);
-                    String title    = cursor.getString(1);
-                    String duration = cursor.getString(2);
-                    String path     = cursor.getString(3);
-                    String artist   = cursor.getString(4);
-                    String id       = cursor.getString(5);
-                    String albumId  = cursor.getString(6);
-                    String albumYear = cursor.getString(7);
+                    String album    = cursor.getString(albumColumn);
+                    String title    = cursor.getString(titleIdx);
+                    String duration = cursor.getString(durationIdx);
+                    String path     = cursor.getString(pathIdx);
+                    String artist   = cursor.getString(artistIdx);
+                    String id       = cursor.getString(idIdx);
+                    String albumId  = cursor.getString(albumIdIdx);
+                    String albumYear = cursor.getString(albumYearIdx);
                     //String albumgenre = cursor.getString(8);
-                    long dateAdded = cursor.getLong(9);
-                    long size = cursor.getLong(10);
+                    long dateAdded = cursor.getLong(dateAddedIdx);
+                    long size = cursor.getLong(sizeIdx);
 
                     MusicFiles song = new MusicFiles(path, title, artist, album, duration, id, albumId,albumYear,dateAdded,size);
 
@@ -160,8 +172,8 @@ public class SearchActivity extends AppCompatActivity {
 
                     // Album-Treffer (jedes Album nur einmal)
                     if (album != null && album.toLowerCase().contains(lowerQuery)
-                            && !addedAlbums.contains(album)) {
-                        addedAlbums.add(album);
+                            && !addedAlbums.contains(albumId)) {
+                        addedAlbums.add(albumId);
                         newResults.add(new SearchResultItem(SearchResultItem.TYPE_ALBUM, song));
                     }
 

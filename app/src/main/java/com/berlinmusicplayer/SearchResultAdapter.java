@@ -71,20 +71,15 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
                 holder.subtitle.setText(song.getArtist());
                 holder.itemView.setOnClickListener(v -> {
                     Integer masterPosition = songPositionMap.get(song.getId());
-
-
                     if(masterPosition == null)return;
-
-                    // Song direkt spielen
                     Intent serviceIntent = new Intent(mContext, MusicService.class);
                     serviceIntent.putExtra("actionName", "PLAY_MASTER_SONG");
                     serviceIntent.putExtra("position", masterPosition);
                     mContext.startService(serviceIntent);
 
                     Intent playerIntent = new Intent(mContext, PlayerActivity.class);
-                    playerIntent.putExtra("position", masterPosition);
                     playerIntent.putExtra("sender", "search");
-                    playerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    playerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     mContext.startActivity(playerIntent);
                 });
                 break;
@@ -96,6 +91,7 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
                 holder.itemView.setOnClickListener(v -> {
                     Intent intent = new Intent(mContext, AlbumDetails.class);
                     intent.putExtra("albumName", song.getAlbum());
+                    intent.putExtra("albumId", song.getAlbumId());
                     mContext.startActivity(intent);
                 });
                 break;

@@ -1,0 +1,49 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="160dp"
+    android:viewportWidth="120"
+    android:viewportHeight="160">
+
+    <!-- Pivot-Kreis oben rechts -->
+    <path
+        android:pathData="M100,12 m-12,0 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0"
+        android:fillColor="#888888"/>
+    <path
+        android:pathData="M100,12 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0"
+        android:fillColor="#444444"/>
+    <path
+        android:pathData="M100,12 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"
+        android:fillColor="#222222"/>
+
+    <!-- Tonarm-Rohr: vom Pivot schräg runter-links -->
+    <path
+        android:pathData="M97,18 L30,145"
+        android:strokeColor="#aaaaaa"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Glanzlinie auf dem Rohr -->
+    <path
+        android:pathData="M95,20 L29,143"
+        android:strokeColor="#dddddd"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Geneigtes Rechteck am Ende -->
+    <path
+        android:pathData="
+        M18,144
+        L40,126
+        L47,138
+        L25,151
+        Z"
+        android:fillColor="#7d7d7d"/>
+    <path
+        android:pathData="M21,144 L41,127"
+        android:strokeColor="#cfcfcf"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+</vector>
