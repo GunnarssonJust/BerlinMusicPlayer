@@ -46,6 +46,9 @@
     <string name="artist">Interpret</string>
     <string name="player_design">Player Design</string>
     <string name="teilen">Teilen</string>
+    <string name="equalizer">Equalizer</string>
+    <string name="sleep_timer">Schlaf-Modus</string>
+    <string name="import_playlists">import_playlists_from_phone</string>
 
 
 </resources>

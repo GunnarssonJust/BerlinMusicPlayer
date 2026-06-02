@@ -14,4 +14,6 @@
     <string name="year">Year</string>
     <string name="player_design">Player Design</string>
     <string name="teilen">Teilen</string>
+    <string name="equalizer">Equalizer</string>
+    <string name="import_playlists">import_playlists_from_phone</string>
 </resources>

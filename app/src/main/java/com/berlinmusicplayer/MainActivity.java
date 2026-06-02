@@ -6,9 +6,13 @@ import static com.berlinmusicplayer.MusicService.MUSIC_LAST_PLAYED;
 import static com.berlinmusicplayer.MusicService.SONG_NAME;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -52,12 +56,12 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     private SongsFragment songsFragment;
     private AlbumFragment albumFragment;
     private ArtistFragment artistFragment;
+
     // NEU
     PlaylistFragment playlistFragment;
     // ← NEU
     RecentFragment recentFragment;
     private ViewPager2 viewPager;
-
 
 
     @Override
@@ -169,8 +173,10 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                     MusicFiles currentSong = currentPlaylist.get(musicService.position);
                     bottomPlayer.updateNowPlayingUI(currentSong, musicService.isPlaying());
                 }
-                // ------------------------------------
             }
+            if(songsFragment!=null)songsFragment.refreshAdapter();
+            if(albumFragment!= null) albumFragment.refreshAdapter();
+            if(artistFragment!=null)artistFragment.refreshAdapter();
         });
     }
 
@@ -420,7 +426,8 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
             for (MusicFiles song : musicFiles) {
                 String uniqueKey = song.getAlbum() + "_" + song.getAlbumId();
-                // Alben-Liste erstellen
+                // Alben-Liste erstellen, auch wenn es doppelte Einträge(z.B. Album: Solo,
+                // Künstler: Louane & Peter Heppner) gibt
                 if (!duplicateAlbumNames.contains(uniqueKey)) {
                     albums.add(song);
                     duplicateAlbumNames.add(uniqueKey);
@@ -471,6 +478,9 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             }
         }
         return -1;
+    }
+    protected void onDestroy(){
+        super.onDestroy();
     }
 }
       

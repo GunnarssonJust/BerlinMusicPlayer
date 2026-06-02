@@ -18,5 +18,10 @@
     <style name="CustomOverflowStyle" parent="Widget.AppCompat.Light.ActionButton.Overflow">
         <item name="android:src">@drawable/ic_gate</item>
     </style>
+    <style name="SleepTimerDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@color/darkestgreen</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
 
 </resources>

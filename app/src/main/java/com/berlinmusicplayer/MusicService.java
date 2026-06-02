@@ -242,7 +242,6 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             case AudioManager.AUDIOFOCUS_LOSS:
                 if(mediaPlayer != null) {
                     fadeOutAndPause();
-                    release();
                 }
                 playWhenReady = false;
                 break;
@@ -571,6 +570,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             }
             mediaPlayer = null;
         }
+        EqualizerManager.getInstance().release();
     }
 
     void createMediaPlayer(int position, boolean autoPlay) {
@@ -600,6 +600,9 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             Uri uri = Uri.parse(currentPlaylist.get(position).getPath());
             mediaPlayer = MediaPlayer.create(getApplicationContext(), uri);
             if(mediaPlayer != null) {
+                int audioSessionId = mediaPlayer.getAudioSessionId();
+                EqualizerManager.getInstance().initEqualizer(audioSessionId);
+
                 mediaPlayer.setOnCompletionListener(this);
                 saveCurrentSongToPrefs();
                 updateMediaSessionState();
@@ -627,6 +630,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
 
     public void start() {
+        Log.d(TAG, "Esel MusicService: start");
         // Sicherheitscheck
         if (mediaPlayer == null) {
             Log.e(TAG, "start: Versuch, einen nicht existierenden MediaPlayer zu starten.");
@@ -665,6 +669,10 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             editor.putBoolean(PLAYER_PLAYING, true);
             editor.putInt("songPosition",position);
             editor.putInt("songIndex",position);
+            if(currentPlaylist != null && position >= 0 && position < currentPlaylist.size()){
+                editor.putString("current_song_id", currentPlaylist.get(position).getId());
+                Log.d("DEBUG","current_song_id: "+currentPlaylist.get(position).getId());
+            }
             boolean isMasterPlaylist = (currentPlaylist == musicFiles);
             editor.putBoolean("isMasterPlaylist", isMasterPlaylist);
             if(!isMasterPlaylist){
@@ -676,6 +684,15 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 editor.putString("albumSongs", jsonPaths);
             }
             editor.apply();
+            if(mainActivityCallback != null){
+                mainActivityCallback.onPlaybackStateChanged();
+            }
+            if(actionPlaying != null){
+                actionPlaying.updatePlayerView();
+            }
+            Intent updateIntent = new Intent("SONG_CHANGED");
+            updateIntent.putExtra("songId", currentPlaylist.get(position).getId());
+            sendBroadcast(updateIntent);
 
             // 2. Informiere die externen UIs (Notification & Widget)
             showNotification(R.drawable.ic_notif_play); // Musik spielt -> zeige PAUSE-Icon
@@ -717,7 +734,6 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
         showNotification(R.drawable.ic_notif_pause);
         sendWidgetUpdate();
-        updateMediaSessionState();
 
         if (actionPlaying != null) {
             actionPlaying.updatePlayPauseButton();
@@ -730,6 +746,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         } catch (IllegalStateException e) {
             Log.e(TAG, "Error pausing mediaPlayer", e);
         }
+        updateMediaSessionState();
     }
 
     public boolean isPlaying() {
@@ -927,6 +944,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
         if(mainActivityCallback != null){
             mainActivityCallback.onSongChanged();
+            mainActivityCallback.onPlaybackStateChanged();
         }
         sendWidgetUpdate();
         if (miniPlayerCallback != null) miniPlayerCallback.onSongChanged();
@@ -950,6 +968,11 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             // Dies veranlasst die PlayerActivity, ihre updateUiComponents() aufzurufen.
             actionPlaying.nextBtnClicked();
             actionPlaying.updatePlayPauseButton();
+        }
+
+        if (mainActivityCallback != null) {
+            mainActivityCallback.onSongChanged();
+            mainActivityCallback.onPlaybackStateChanged();
         }
 
         sendWidgetUpdate();
@@ -1014,6 +1037,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
         shuffleBoolean = true;
         repeatBoolean = false;
+        currentPlaylist = musicFiles;
         position = new Random().nextInt(currentPlaylist.size());
 
         createMediaPlayer(position);
@@ -1152,7 +1176,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
         // ValueAnimator, der von 1.0f (volle Lautstärke) auf 0.0f (stumm) animiert
         final ValueAnimator volumeAnimator = ValueAnimator.ofFloat(1.0f, 0.0f);
-        volumeAnimator.setDuration(800); // Dauer des Ausblendens in Millisekunden (z.B. 800ms)
+        volumeAnimator.setDuration(2000); // Dauer des Ausblendens in Millisekunden (z.B. 800ms)
 
         volumeAnimator.addUpdateListener(animation -> {
             if (mediaPlayer != null) {
@@ -1170,6 +1194,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 if (isPlaying()) {
                     pause(); // Rufe deine normale pause()-Methode auf
                 }
+                release();
             }
         });
         volumeAnimator.start(); // Starte die Animation
@@ -1189,6 +1214,11 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }else{
             playMedia(0);
         }
+    }
+    public String getCurrentSongId(){
+        if(currentPlaylist == null) return null;
+        if(position < 0 || position >= currentPlaylist.size()) return null;
+        return currentPlaylist.get(position).getId();
     }
 
     public ArrayList<MusicFiles> getMusicFiles(){
@@ -1286,6 +1316,9 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 position = 0;
             }
         }
+    }
+    public EqualizerManager getEqualizer(){
+        return EqualizerManager.getInstance();
     }
 
 }

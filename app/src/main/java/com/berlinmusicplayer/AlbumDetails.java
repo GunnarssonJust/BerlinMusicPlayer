@@ -76,13 +76,12 @@ public class AlbumDetails extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (albumName == null) return; // Sicherheitscheck    // --- NEUE, ROBUSTE LOGIK ---
-        // 1. Hole die Songs für DIESES Album, direkt vom System und nach Track-Nummer sortiert.
+        if (albumName == null) return;
         albumSongs = getAlbumSongs(this, albumName);
 
-        // 2. Sage dem Adapter, er soll sich mit der neuen, perfekt sortierten Liste aktualisieren.
         if (albumDetailsAdapter != null) {
             albumDetailsAdapter.updateList(albumSongs);
+            albumDetailsAdapter.notifyDataSetChanged();
         }
     }
 
@@ -99,15 +98,21 @@ public class AlbumDetails extends AppCompatActivity {
     }
     public ArrayList<MusicFiles> getAlbumSongs(Context context, String albumName) {
         ArrayList<MusicFiles> albumSongList = new ArrayList<>();
+        if (albumName == null) return albumSongList;
+
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String selection;
+        String[] selectionArgs;
 
-        // Wir wollen nur Songs, deren Album-Name und der speziellen ID dem übergebenen Namen entspricht.
-        String selection = MediaStore.Audio.Media.ALBUM + "=? AND " +
-                MediaStore.Audio.Media.ALBUM_ID + "=?";
-        String[] selectionArgs = new String[]{albumName,albumId};
+        if (albumId != null) {
+            selection = MediaStore.Audio.Media.ALBUM + "=? AND " +
+                    MediaStore.Audio.Media.ALBUM_ID + "=?";
+            selectionArgs = new String[]{albumName, albumId};
+        } else {
+            selection = MediaStore.Audio.Media.ALBUM + "=?";
+            selectionArgs = new String[]{albumName};
+        }
 
-        // Sortierung nach der Track-Nummer
-        // Die Track-Nummer ist in MediaStore.Audio.Media.TRACK gespeichert
         String sortOrder = MediaStore.Audio.Media.TRACK + " ASC";
 
         String[] projection = {
@@ -119,7 +124,6 @@ public class AlbumDetails extends AppCompatActivity {
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.YEAR,
-                //MediaStore.Audio.Media.GENRE existiert wohl nicht mehr
                 MediaStore.Audio.Media.DATE_ADDED,
                 MediaStore.Audio.Media.SIZE
         };
@@ -135,7 +139,6 @@ public class AlbumDetails extends AppCompatActivity {
             int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
             int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
             int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
-            //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
             int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
             int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
             while (cursor.moveToNext()) {
@@ -147,7 +150,6 @@ public class AlbumDetails extends AppCompatActivity {
                 String id = cursor.getString(idIdx);
                 String albumId = cursor.getString(albumIdIdx);
                 String albumYear = cursor.getString(albumYearIdx);
-                //String albumgenre = cursor.getString(hier fehlt wassss);
                 long dateAdded = cursor.getLong(dateAddedIdx);
                 long size = cursor.getLong(sizeIdx);
 

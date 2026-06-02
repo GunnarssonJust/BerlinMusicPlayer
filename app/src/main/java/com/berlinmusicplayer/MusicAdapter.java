@@ -1,8 +1,12 @@
 package com.berlinmusicplayer;
 
+import static com.berlinmusicplayer.AlbumDetailsAdapter.albumFiles;
+
 import android.annotation.SuppressLint;
 import android.content.ContentUris;import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -30,6 +34,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
     private Context mContext;
     private ArrayList<MusicFiles> mFiles;
     private boolean isInSearchMode = false;
+    MusicService musicService;
 
     MusicAdapter(Context mContext, ArrayList<MusicFiles> mFiles) {
         this.mContext = mContext;
@@ -51,6 +56,18 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
 
         holder.file_name.setText(mFiles.get(position).getTitle());
         holder.artist_name.setText(mFiles.get(position).getArtist());
+        MusicFiles currentSong = mFiles.get(position);
+
+        if (isCurrentSong(currentSong)) {
+            holder.file_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+            holder.artist_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+        } else {
+            holder.file_name.setTextColor(mContext.getColor(android.R.color.white));
+            holder.artist_name.setTextColor(mContext.getColor(android.R.color.darker_gray));
+        }
+
+
+
         holder.trackNumber.setVisibility(View.GONE);
         holder.album_art.setVisibility(View.VISIBLE);
 
@@ -190,6 +207,11 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
     @Override
     public String getSectionName(int position) {
         return mFiles.get(position).getTitle().substring(0, 1).toUpperCase();
+    }
+    private boolean isCurrentSong(MusicFiles song){
+        SharedPreferences prefs = mContext.getSharedPreferences("LAST_PLAYED", Context.MODE_PRIVATE);
+        String currentSongId = prefs.getString("current_song_id", "");
+        return currentSongId.equals(song.getId());
     }
 
     public static class MusicDiffCallback extends DiffUtil.Callback {

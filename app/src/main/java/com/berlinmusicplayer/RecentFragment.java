@@ -33,7 +33,7 @@ public class RecentFragment extends Fragment {
         } else {
             emptyText.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
-            adapter = new ArtistDetailAdapter(getContext(), recentSongs);
+            adapter = new ArtistDetailAdapter(getContext(), recentSongs,0);
             recyclerView.setAdapter(adapter);
             recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         }
@@ -50,9 +50,10 @@ public class RecentFragment extends Fragment {
         } else if (!recentSongs.isEmpty()) {
             emptyText.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
-            adapter = new ArtistDetailAdapter(getContext(), recentSongs);
+            adapter = new ArtistDetailAdapter(getContext(), recentSongs,0);
             recyclerView.setAdapter(adapter);
             recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         }
     }
+
 }

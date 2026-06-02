@@ -31,7 +31,6 @@ public class SongsFragment extends Fragment {
     private TextView popupBubble;
     private Handler bubbleHandler;
     private ArrayList<MusicFiles> musicFiles = new ArrayList<>();
-
     private final Runnable hideBubbleRunnable = this::hidePopupBubble;
     private final android.util.SparseIntArray letterPositions = new android.util.SparseIntArray();
     public SongsFragment() {}
@@ -187,5 +186,11 @@ public class SongsFragment extends Fragment {
                 .setDuration(150)
                 .withEndAction(() -> popupBubble.setVisibility(View.GONE))
                 .start();
+    }
+
+    public void refreshAdapter() {
+        if (musicAdapter != null) {
+            musicAdapter.notifyDataSetChanged();
+        }
     }
 }

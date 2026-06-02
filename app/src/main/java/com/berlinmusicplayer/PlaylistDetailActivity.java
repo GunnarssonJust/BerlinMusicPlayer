@@ -3,6 +3,7 @@ package com.berlinmusicplayer;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
@@ -10,7 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class PlaylistDetailActivity extends AppCompatActivity {
 
@@ -38,9 +41,11 @@ public class PlaylistDetailActivity extends AppCompatActivity {
         title.setText(playlistName);
 
         songs = playlistManager.getSongsForPlaylist(playlistIndex);
+        songs.sort((a,b)->
+                a.getTitle().compareToIgnoreCase(b.getTitle()));
         updateUI();
 
-        adapter = new ArtistDetailAdapter(this, songs);
+        adapter = new ArtistDetailAdapter(this, songs,playlistIndex);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }

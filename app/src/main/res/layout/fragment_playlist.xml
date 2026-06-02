@@ -12,15 +12,30 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#77000000"/>
-
+    <!-- Neue Playlist erstellen -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_new_playlist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
+        android:contentDescription="@string/add_to_playlist"
         android:src="@android:drawable/ic_input_add"
         app:backgroundTint="@color/darkgreen"
         app:tint="@color/white"/>
+
+    <!--System - Playlists importieren, die auf dem Smartphone gespeichert sind -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_import_playlist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        android:contentDescription="@string/import_playlists"
+        android:src="@android:drawable/ic_menu_agenda"
+        android:backgroundTint="@color/darkgreen"
+        android:tint="@color/white"/>
+
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

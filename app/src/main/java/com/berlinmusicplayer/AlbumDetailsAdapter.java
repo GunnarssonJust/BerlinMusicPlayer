@@ -4,6 +4,8 @@ package com.berlinmusicplayer;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore;
@@ -26,6 +28,7 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
     private Context mContext;
     private TextView trackNumber;
     static ArrayList<MusicFiles> albumFiles;
+    MusicService musicService;
     View view;
     public AlbumDetailsAdapter(Context mContext, ArrayList<MusicFiles> albumFiles) {
         this.mContext = mContext;
@@ -48,6 +51,15 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
         holder.trackNumber.setVisibility(View.VISIBLE);
         String track = getTrackNumber(albumFiles.get(position).getPath());
         holder.trackNumber.setText(track);
+        MusicFiles currentSong = albumFiles.get(position);
+        if (isCurrentSong(currentSong)) {
+            holder.album_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+            holder.artist_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+        } else {
+            holder.album_name.setTextColor(mContext.getColor(android.R.color.white));
+            holder.artist_name.setTextColor(mContext.getColor(android.R.color.darker_gray));
+        }
+
 
         holder.itemView.setOnClickListener(v -> {
             // 1) Service starten mit der Album-Playlist
@@ -112,5 +124,10 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
         }
         // Fallback, falls keine Track-Nummer gefunden wird
         return "•";
+    }
+    private boolean isCurrentSong(MusicFiles song) {
+        SharedPreferences prefs = mContext.getSharedPreferences("LAST_PLAYED", Context.MODE_PRIVATE);
+        String currentSongId = prefs.getString("current_song_id", "");
+        return currentSongId.equals(song.getId());
     }
 }

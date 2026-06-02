@@ -32,4 +32,6 @@
     <string name="unbekanntes_jahr">Unknown Year</string>
     <string name="unbekanntes_album">No Album Name</string>
     <string name="teilen">Share</string>
+    <string name="equalizer">Equalizer</string>
+    <string name="import_playlists">import_playlists_from_phone</string>
 </resources>

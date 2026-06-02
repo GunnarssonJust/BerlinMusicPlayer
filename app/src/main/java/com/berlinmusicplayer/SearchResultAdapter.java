@@ -3,6 +3,8 @@ package com.berlinmusicplayer;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +26,7 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
     private final Context mContext;
     private final ArrayList<SearchResultItem> results;
     private Map<String, Integer> songPositionMap = new HashMap<>();
+    MusicService musicService;
 
     public SearchResultAdapter(Context mContext, ArrayList<SearchResultItem> results, ArrayList<MusicFiles> allSongs) {
         this.mContext = mContext;
@@ -69,6 +72,15 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
                 holder.typeLabel.setText("🎵 Song");
                 holder.title.setText(song.getTitle());
                 holder.subtitle.setText(song.getArtist());
+                if (isCurrentSong(song)) {
+                    holder.title.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+                    holder.subtitle.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+                } else {
+                    holder.title.setTextColor(mContext.getColor(android.R.color.white));
+                    holder.subtitle.setTextColor(mContext.getColor(android.R.color.darker_gray));
+                }
+
+
                 holder.itemView.setOnClickListener(v -> {
                     Integer masterPosition = songPositionMap.get(song.getId());
                     if(masterPosition == null)return;
@@ -125,5 +137,11 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
             title = itemView.findViewById(R.id.search_result_title);
             subtitle = itemView.findViewById(R.id.search_result_subtitle);
         }
+    }
+
+    private boolean isCurrentSong(MusicFiles song) {
+        SharedPreferences prefs = mContext.getSharedPreferences("LAST_PLAYED", Context.MODE_PRIVATE);
+        String currentSongId = prefs.getString("current_song_id", "");
+        return currentSongId.equals(song.getId());
     }
 }

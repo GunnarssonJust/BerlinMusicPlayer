@@ -21,7 +21,6 @@ import java.util.ArrayList;
 
 public class ArtistActivity extends AppCompatActivity {
 
-    RecyclerView recyclerView;
     ImageView artistPhoto;
     TextView artistTitle;
     String artistName;
@@ -58,15 +57,8 @@ public class ArtistActivity extends AppCompatActivity {
             return;
         }
 
-        if (artistSongs.isEmpty()) {
-            Log.e("ArtistActivity", "Fehler: artistSongs ist leer!");
-            finish();  // Activity sofort schließen
-            return;
-        }
-
 
         // Cover des ersten Songs als Künstler-Bild laden
-
 	
 		byte[] image = getAlbumArt(artistSongs.get(0).getPath());
 		if (image != null) {
@@ -115,7 +107,6 @@ public class ArtistActivity extends AppCompatActivity {
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.YEAR,
-                MediaStore.Audio.Media.GENRE,
                 MediaStore.Audio.Media.DATE_ADDED,
                 MediaStore.Audio.Media.SIZE
         };
@@ -130,7 +121,6 @@ public class ArtistActivity extends AppCompatActivity {
                 int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
                 int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
                 int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
-                //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
                 int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
                 int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
 
@@ -143,7 +133,6 @@ public class ArtistActivity extends AppCompatActivity {
                     String id = cursor.getString(idIdx);
                     String albumId = cursor.getString(albumIdIdx);
                     String albumYear = cursor.getString(albumYearIdx);
-                    //String albumgenre = cursor.getString(8);
                     long dateAdded = cursor.getLong(dateAddedIdx);
                     long size = cursor.getLong(sizeIdx);
 
@@ -152,5 +141,10 @@ public class ArtistActivity extends AppCompatActivity {
             }
         }
         return songList;
+    }
+    @Override
+    protected void onResume(){
+        super.onResume();
+        if(artistPagerAdapter!=null)artistPagerAdapter.notifyDataSetChanged();
     }
 }

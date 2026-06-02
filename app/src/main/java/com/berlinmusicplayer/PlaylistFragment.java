@@ -1,7 +1,10 @@
 package com.berlinmusicplayer;
 
 import android.app.AlertDialog;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,7 +12,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,6 +23,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class PlaylistFragment extends Fragment {
@@ -25,12 +34,21 @@ public class PlaylistFragment extends Fragment {
     private PlaylistAdapter playlistAdapter;
     private PlaylistManager playlistManager;
 
+    // ← M3U Datei-Picker
+    private final ActivityResultLauncher<String[]> m3uPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    importM3uFile(uri);
+                }
+            });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_playlist, container, false);
 
         recyclerView = view.findViewById(R.id.playlist_recyclerView);
         FloatingActionButton fabNewPlaylist = view.findViewById(R.id.fab_new_playlist);
+        FloatingActionButton fabImportPlaylist = view.findViewById(R.id.fab_import_playlist);
 
         playlistManager = PlaylistManager.getInstance(requireContext());
 
@@ -38,10 +56,88 @@ public class PlaylistFragment extends Fragment {
         recyclerView.setAdapter(playlistAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Neue Playlist erstellen
         fabNewPlaylist.setOnClickListener(v -> showCreatePlaylistDialog());
 
+        // ← Import-FAB öffnet Datei-Picker
+        fabImportPlaylist.setOnClickListener(v ->
+                m3uPicker.launch(new String[]{"audio/x-mpegurl", "application/octet-stream", "*/*"})
+        );
+
         return view;
+    }
+
+    // ─── M3U Datei einlesen ───────────────────────────────────────
+    private void importM3uFile(Uri uri) {
+        String playlistName = getFileNameFromUri(uri);
+        ArrayList<String> paths = new ArrayList<>();
+
+        try (InputStream is = requireContext().getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                // M3U Kommentare und leere Zeilen überspringen
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                paths.add(line);
+            }
+
+        } catch (Exception e) {
+            Log.e("PlaylistFragment", "Fehler beim Lesen der M3U Datei", e);
+            Toast.makeText(getContext(), "Fehler beim Lesen der Datei!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (paths.isEmpty()) {
+            Toast.makeText(getContext(), "Keine Songs in der Datei gefunden!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Songs mit MusicFiles abgleichen
+        ArrayList<MusicFiles> allSongs = playlistManager.getMusicFiles();
+        if (allSongs == null) {
+            Toast.makeText(getContext(), "Musikbibliothek nicht geladen!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Neue Playlist erstellen
+        playlistManager.createPlaylist(playlistName);
+        int newIndex = playlistManager.getPlaylists().size() - 1;
+        int found = 0;
+
+        for (String path : paths) {
+            for (MusicFiles song : allSongs) {
+                // Pfad oder Dateiname vergleichen
+                if (song.getPath().equals(path) ||
+                        song.getPath().endsWith(path) ||
+                        path.endsWith(getFileName(song.getPath()))) {
+                    playlistManager.addSongToPlaylist(newIndex, song.getId());
+                    found++;
+                    break;
+                }
+            }
+        }
+
+        playlistAdapter.notifyDataSetChanged();
+        Toast.makeText(getContext(),
+                "\"" + playlistName + "\" importiert — " + found + "/" + paths.size() + " Songs gefunden!",
+                Toast.LENGTH_LONG).show();
+    }
+
+    // ─── Hilfsmethoden ────────────────────────────────────────────
+    private String getFileNameFromUri(Uri uri) {
+        String path = uri.getLastPathSegment();
+        if (path != null) {
+            // .m3u Endung entfernen
+            if (path.contains("/")) path = path.substring(path.lastIndexOf("/") + 1);
+            if (path.toLowerCase().endsWith(".m3u")) path = path.substring(0, path.length() - 4);
+        }
+        return path != null ? path : "Importierte Playlist";
+    }
+
+    private String getFileName(String path) {
+        if (path == null) return "";
+        return path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
     }
 
     @Override
@@ -114,15 +210,13 @@ public class PlaylistFragment extends Fragment {
             holder.name.setText(playlist.name);
             holder.count.setText(playlist.songIds.size() + " Songs");
 
-            // Playlist öffnen
             holder.itemView.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(getContext(), PlaylistDetailActivity.class);
+                Intent intent = new Intent(getContext(), PlaylistDetailActivity.class);
                 intent.putExtra("playlistIndex", position);
                 intent.putExtra("playlistName", playlist.name);
                 startActivity(intent);
             });
 
-            // Menü: Umbenennen / Löschen
             holder.menuMore.setOnClickListener(v -> {
                 PopupMenu popupMenu = new PopupMenu(getContext(), v);
                 popupMenu.getMenu().add(0, 0, 0, "Umbenennen");

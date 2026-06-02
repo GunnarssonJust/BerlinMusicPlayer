@@ -6,8 +6,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +21,7 @@ import android.graphics.Outline;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -32,6 +36,8 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,6 +68,10 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     private boolean isVinylDesign = false;
     private float vinylRotationOffset = 0f;
     private ImageView toneArm;
+    private CountDownTimer sleepTimer;
+    private static final int SLEEP_TIMER_NOTIFICATION_ID = 999;
+    private NotificationManager notificationManager;
+    private long sleepTimeRemaining = 0;
     //public static final String poS = "POSITION";
 
     @Override
@@ -92,6 +102,16 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_gate));
         mContainer = findViewById(R.id.mContainer);
         vinylContainer = findViewById(R.id.vinyl_container);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "sleep_timer_channel",
+                    "Sleep-Timer",
+                    NotificationManager.IMPORTANCE_LOW);
+            channel.setSound(null, null);  // Kein Sound
+            notificationManager.createNotificationChannel(channel);
+        }
+
         mContainer.setOnTouchListener(new View.OnTouchListener(){
             private float startY;
             private static final int SWIPE_THRESHOLD = 150;
@@ -557,6 +577,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             // Album öffnen → AlbumDetails
             Intent intent = new Intent(this, AlbumDetails.class);
             intent.putExtra("albumName", currentSong.getAlbum());
+            intent.putExtra("albumId", currentSong.getAlbumId());
             startActivity(intent);
             return true;
 
@@ -567,10 +588,18 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             return true;
-        }else if(itemId == R.id.menu_share) {}//TODO
+        }
         else if(itemId == R.id.player_design){
             showPlayerDesignDialog();
-        } else {}//TODO
+        } else if(itemId == R.id.menu_equalizer){
+            showEqualizerDialog();
+            return true;
+        }else if(itemId == R.id.menu_sleep_timer){
+            showSleepTimerDialog();
+            return true;
+        }
+        else if(itemId == R.id.menu_share) {}//TODO
+        else{}//TODO
         return super.onOptionsItemSelected(item);
     }
 
@@ -716,7 +745,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
-    // 5. Tonarm-Animationen:
+    // Tonarm-Animationen:
     private void moveToneArmToPlay() {
         if (!isVinylDesign || toneArm == null) return;
         Animation anim = AnimationUtils.loadAnimation(this, R.anim.tonearm_play);
@@ -730,4 +759,196 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         anim.setFillAfter(true);
         toneArm.startAnimation(anim);
     }
+
+    private void showEqualizerDialog() {
+        if (musicService == null) return;
+
+        EqualizerManager eqManager = musicService.getEqualizer();
+        if (!eqManager.isEnabled()) {
+            Toast.makeText(this, "Equalizer nicht verfügbar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        short numBands = eqManager.getNumberOfBands();
+        short[] levelRange = eqManager.getBandLevelRange();
+        short minLevel = levelRange[0];  // -1200mB
+        short maxLevel = levelRange[1];  // +1200mB
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.SleepTimerDialogTheme);
+        builder.setTitle("🎚️ Equalizer");
+
+        // Erstelle ein LinearLayout mit Sliders für jeden Band
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(16, 16, 16, 16);
+
+        for (short i = 0; i < numBands; i++) {
+            // Label für Frequenz
+            int freqHz = eqManager.getBandFrequency(i);
+            String freqLabel = formatFrequency(freqHz);
+
+            TextView label = new TextView(this);
+            label.setText(freqLabel);
+            label.setTextSize(12);
+            label.setPadding(0, 8, 0, 4);
+            layout.addView(label);
+
+            // SeekBar für diesen Band
+            SeekBar slider = new SeekBar(this);
+            slider.setMin(0);
+            slider.setMax((int)(maxLevel - minLevel));
+
+            short currentGain = eqManager.getBandGain(i);
+            slider.setProgress((int)(currentGain - minLevel));
+
+            final short bandIndex = i;
+            slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        short gain = (short)(progress + minLevel);
+                        eqManager.setBandGain(bandIndex, gain);
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {}
+            });
+
+            layout.addView(slider);
+        }
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(layout);
+
+        builder.setView(scrollView);
+
+        // Buttons für Presets
+        builder.setPositiveButton("Flat", (dialog, which) -> {
+            eqManager.applyFlat();
+            dialog.dismiss();
+        });
+
+        builder.setNegativeButton("Bass Boost", (dialog, which) -> {
+            eqManager.applyBassBoost();
+            dialog.dismiss();
+        });
+
+        builder.setNeutralButton("Treble Boost", (dialog, which) -> {
+            eqManager.applyTrebleBoost();
+            dialog.dismiss();
+        });
+
+        builder.show();
+    }
+    //Hilfsmethode — formatiere Frequenz lesbar:
+    private String formatFrequency(int freqHz) {
+        if (freqHz < 1000) {
+            return freqHz + " Hz";
+        } else {
+            return String.format("%.1f kHz", freqHz / 1000.0);
+        }
+    }
+    private void showSleepTimerDialog() {
+        String[] times = {"5 Min", "15 Min", "30 Min", "60 Min", "Aus"};
+        long[] milliseconds = {
+                5 * 60 * 1000,      // 5 Min
+                15 * 60 * 1000,     // 15 Min
+                30 * 60 * 1000,     // 30 Min
+                60 * 60 * 1000,     // 60 Min
+                0                   // Aus
+        };
+        new AlertDialog.Builder(this,R.style.SleepTimerDialogTheme)
+                .setTitle("⏰ Sleep-Timer")
+                .setSingleChoiceItems(times, -1, (dialog, which) -> {
+                    if (milliseconds[which] == 0) {
+                        // Timer ausschalten
+                        stopSleepTimer();
+                        Toast.makeText(this, "Sleep-Timer aus", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // Timer starten
+                        startSleepTimer(milliseconds[which]);
+                        Toast.makeText(this, "Timer: " + times[which], Toast.LENGTH_SHORT).show();
+                    }
+                    dialog.dismiss();
+                })
+                .show();
+    }
+
+
+
+
+
+
+    private void startSleepTimer(long milliseconds) {
+        stopSleepTimer();  // Alten Timer abbrechen falls einer aktiv
+
+        sleepTimeRemaining = milliseconds;
+        sleepTimer = new CountDownTimer(milliseconds, 1000) {
+            @Override
+            public void onTick(long msUntilFinished) {
+                sleepTimeRemaining = msUntilFinished;
+                // Formatiere Zeit: "45:30" oder "1:23:45"
+                long seconds = msUntilFinished / 1000;
+                long minutes = seconds / 60;
+                long hours = minutes / 60;
+                long remainingSeconds = seconds % 60;
+                long remainingMinutes = minutes % 60;
+
+                String timeText;
+                if (hours > 0) {
+                    timeText = String.format("%d:%02d:%02d", hours, remainingMinutes, remainingSeconds);
+                } else {
+                    timeText = String.format("%d:%02d", minutes, remainingSeconds);
+                }
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(PlayerActivity.this, "sleep_timer_channel")
+                        .setSmallIcon(R.mipmap.ic_pause)
+                        .setContentTitle("Sleep Timer")
+                        .setContentText("Verbleibend: " + timeText)
+                        .setProgress(0,0,false)
+                        .setOngoing(true)
+                        .setPriority(NotificationCompat.PRIORITY_LOW);
+                notificationManager.notify(SLEEP_TIMER_NOTIFICATION_ID, builder.build());
+            }
+
+            @Override
+            public void onFinish() {
+                sleepTimeRemaining = 0;
+                // Musik stoppen
+                if (musicService != null) {
+                    musicService.pause();
+                    updatePlayPauseButton();
+                }
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(PlayerActivity.this, "sleep_timer_channel")
+                        .setSmallIcon(R.mipmap.ic_play_pressed)
+                        .setContentTitle("Sleep Timer")
+                        .setContentText("Zeit abgelaufen - Musik gestoppt")
+                        .setOngoing(false)
+                        .setPriority(NotificationCompat.PRIORITY_LOW);
+                notificationManager.notify(SLEEP_TIMER_NOTIFICATION_ID, builder.build());
+                Toast.makeText(PlayerActivity.this,"Sleep Timer: Musik gestoppt",Toast.LENGTH_SHORT).show();
+            }
+        };
+        sleepTimer.start();
+    }
+    //Timer stoppen:
+    private void stopSleepTimer() {
+        if (sleepTimer != null) {
+            sleepTimer.cancel();
+            sleepTimer = null;
+            sleepTimeRemaining = 0;
+        }
+        notificationManager.cancel(SLEEP_TIMER_NOTIFICATION_ID);
+    }
+
+    //onDestroy() — Timer aufräumen:
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopSleepTimer();  // ← Timer stoppen bevor Activity zerstört wird
+    }
+
 }

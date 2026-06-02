@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
@@ -23,6 +25,7 @@ import java.util.Collections;
 public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.MyHolder> {
     private Context mContext;
     ArrayList<MusicFiles> artistFiles;
+    MusicService musicService;
 
     public ArtistAdapter(Context mContext, ArrayList<MusicFiles> artistFiles) {
         this.mContext = mContext;
@@ -84,5 +87,10 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.MyHolder> 
         // Sortiere die Künstlerliste immer alphabetisch, ignoriere Groß/Kleinschreibung
         Collections.sort(artistFiles, (a, b) -> a.getArtist().compareToIgnoreCase(b.getArtist()));
         notifyDataSetChanged();
+    }
+    private boolean isCurrentSong(MusicFiles song) {
+        SharedPreferences prefs = mContext.getSharedPreferences("LAST_PLAYED", Context.MODE_PRIVATE);
+        String currentSongId = prefs.getString("current_song_id", "");
+        return currentSongId.equals(song.getId());
     }
 }

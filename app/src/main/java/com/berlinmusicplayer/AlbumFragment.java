@@ -163,4 +163,9 @@ public class AlbumFragment extends Fragment {
             buildLetterIndex();
         }
     }
+    public void refreshAdapter() {
+        if (albumAdapter != null) {
+            albumAdapter.notifyDataSetChanged();
+        }
+    }
 }

@@ -167,4 +167,9 @@ public class ArtistFragment extends Fragment {
             buildLetterIndex();
         }
     }
+    public void refreshAdapter() {
+        if (artistAdapter != null) {
+            artistAdapter.notifyDataSetChanged();
+        }
+    }
 }

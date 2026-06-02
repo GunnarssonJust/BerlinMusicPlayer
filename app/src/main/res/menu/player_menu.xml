@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <item
         android:id="@+id/menu_open_album"
         android:title="@string/album"
         android:icon="@drawable/ic_baer"
+        app:showAsAction="never"
         />
     <item
         android:id="@+id/menu_open_artist"
         android:title="@string/artist"
         android:icon="@drawable/ic_adler"
+        app:showAsAction="never"
         />
     <item
         android:id="@+id/search_option"
@@ -25,7 +28,15 @@
     <item
         android:id="@+id/menu_share"
         android:title="@string/teilen"
-        android:icon="@drawable/ic_baer"
+        android:icon="@drawable/ic_adler"
         app:showAsAction="never"
         />
+    <item
+        android:id="@+id/menu_equalizer"
+        android:title="@string/equalizer"
+        android:showAsAction="never"/>
+    <item
+        android:id="@+id/menu_sleep_timer"
+        android:title="@string/sleep_timer"
+        android:showAsAction="never"/>
 </menu>

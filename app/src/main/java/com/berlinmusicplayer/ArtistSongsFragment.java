@@ -39,7 +39,7 @@ public class ArtistSongsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         if (artistSongs != null) {
-            ArtistDetailAdapter adapter = new ArtistDetailAdapter(getContext(), artistSongs);
+            ArtistDetailAdapter adapter = new ArtistDetailAdapter(getContext(), artistSongs, 0);
             recyclerView.setAdapter(adapter);
         }
 
