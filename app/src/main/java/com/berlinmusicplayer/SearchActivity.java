@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SearchActivity extends AppCompatActivity {
+public class SearchActivity extends BaseActivity {
 
     EditText searchInput;
     RecyclerView recyclerView;
@@ -44,10 +44,9 @@ public class SearchActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.search_recyclerView);
         emptyText = findViewById(R.id.search_empty_text);
 
-        ArrayList<MusicFiles> allSongs = PlaylistManager.getInstance(this).getMusicFiles();
-        if(allSongs == null) allSongs = new ArrayList<>();
 
-        searchResultAdapter = new SearchResultAdapter(this, results, allSongs);
+
+        searchResultAdapter = new SearchResultAdapter(this, results);
         recyclerView.setAdapter(searchResultAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -198,4 +197,11 @@ public class SearchActivity extends AppCompatActivity {
         if (debounceRunnable != null) debounceHandler.removeCallbacks(debounceRunnable);
         executor.shutdown();
     }
+    @Override
+    protected void onMusicServiceConnected() {
+        // z.B. leer lassen, falls ArtistDetails nichts extra braucht,
+        // sobald der MusicService verbunden ist
+    }
+
+
 }

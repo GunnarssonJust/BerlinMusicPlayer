@@ -14,11 +14,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.RemoteViews;
 
-/**
- * Implementierung der App Widget Funktionen.
- */
+import androidx.core.content.ContextCompat;
+
 public class MusicWidgetProvider extends AppWidgetProvider {
 
+    private static final int THRESHOLD_WIDTH = 220;
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
         SharedPreferences preferences = context.getSharedPreferences(MusicService.MUSIC_LAST_PLAYED, Context.MODE_PRIVATE);
@@ -26,6 +26,7 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         String artist = preferences.getString(MusicService.ARTIST_NAME, "");
         long albumId = preferences.getLong(MusicService.ALBUM_ID, -1);
         boolean isPlaying = preferences.getBoolean(MusicService.PLAYER_PLAYING, false);
+
 
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
         int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
@@ -41,7 +42,16 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         }else{
             views.setImageViewResource(R.id.widget_image_playpause, R.drawable.ic_notif_pause);
         }
+        boolean shuffle = preferences.getBoolean("shuffle", false);
+        boolean repeat = preferences.getBoolean("repeat", false);
 
+        if (minWidth>THRESHOLD_WIDTH){
+            int on = ContextCompat.getColor(context, R.color.widget_btn_on);
+            int off = ContextCompat.getColor(context, R.color.widget_btn_off);
+            int repeat_on = ContextCompat.getColor(context, R.color.lightred);
+            views.setInt(R.id.widget_image_shuffle, "setColorFilter", shuffle ? on : off);
+            views.setInt(R.id.widget_image_repeat, "setColorFilter", repeat ? repeat_on : off);
+        }
         if(albumId != -1){
             Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
             Uri albumArtUri = ContentUris.withAppendedId(sArtworkUri, albumId);
@@ -82,8 +92,8 @@ public class MusicWidgetProvider extends AppWidgetProvider {
     }
     
     private static RemoteViews getAppropriateLayout(Context context, int minWidth) {
-        int thresholdWidth = 220;
-        if (minWidth > thresholdWidth){
+
+        if (minWidth > THRESHOLD_WIDTH){
             return new RemoteViews(context.getPackageName(), R.layout.widget_standard);
         }else{
             return new RemoteViews(context.getPackageName(), R.layout.widget_small);
@@ -126,34 +136,34 @@ public class MusicWidgetProvider extends AppWidgetProvider {
         Intent intentPrev = new Intent(context, MusicService.class);
         intentPrev.setAction(MusicService.ACTION_PREV);
 
-        PendingIntent pendingPrev = PendingIntent.getService(context, 1, intentPrev, flags);
+        PendingIntent pendingPrev = PendingIntent.getForegroundService(context, 1, intentPrev, flags);
         views.setOnClickPendingIntent(R.id.widget_image_previous, pendingPrev);
 
         // PLAY / PAUSE
         Intent intentPlayPause = new Intent(context, MusicService.class);
         intentPlayPause.setAction(MusicService.ACTION_PLAY_PAUSE);
 
-        PendingIntent pendingPlayPause = PendingIntent.getService(context, 2, intentPlayPause, flags);
+        PendingIntent pendingPlayPause = PendingIntent.getForegroundService(context, 2, intentPlayPause, flags);
         views.setOnClickPendingIntent(R.id.widget_image_playpause, pendingPlayPause);
 
         // NEXT
         Intent intentNext = new Intent(context, MusicService.class);
         intentNext.setAction(MusicService.ACTION_NEXT);
 
-        PendingIntent pendingNext = PendingIntent.getService(context, 3, intentNext, flags);
+        PendingIntent pendingNext = PendingIntent.getForegroundService(context, 3, intentNext, flags);
         views.setOnClickPendingIntent(R.id.widget_image_next, pendingNext);
 
         // OPTIONAL: Shuffle / Repeat
         Intent intentshuffle = new Intent(context, MusicService.class);
-        intentNext.setAction(MusicService.ACTION_SHUFFLE);
+        intentshuffle.setAction(MusicService.ACTION_SHUFFLE);
 
-        PendingIntent pendingShuffle = PendingIntent.getService(context, 3, intentshuffle, flags);
+        PendingIntent pendingShuffle = PendingIntent.getForegroundService(context, 4, intentshuffle, flags);
         views.setOnClickPendingIntent(R.id.widget_image_shuffle, pendingShuffle);
 
         Intent intentRepeat = new Intent(context, MusicService.class);
-        intentNext.setAction(MusicService.ACTION_REPEAT);
+        intentRepeat.setAction(MusicService.ACTION_REPEAT);
 
-        PendingIntent pendingRepeat = PendingIntent.getService(context, 3, intentRepeat, flags);
+        PendingIntent pendingRepeat = PendingIntent.getForegroundService(context, 5, intentRepeat, flags);
         views.setOnClickPendingIntent(R.id.widget_image_repeat, pendingRepeat);
     }
 }

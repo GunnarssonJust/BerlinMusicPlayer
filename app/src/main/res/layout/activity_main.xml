@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Wir ändern das Hauptlayout zu einem ConstraintLayout -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_player"
     tools:context=".MainActivity">
 
     <!-- 1. Die Toolbar, ganz oben an den Rändern des Parents ausgerichtet -->
@@ -31,7 +31,7 @@
         app:tabIndicatorGravity="center"
         app:tabTextColor="@color/white"
         app:tabPadding="2dp"
-        app:tabIndicatorHeight="40dp"
+        app:tabIndicatorHeight="30dp"
         app:tabIndicator="@drawable/ic_adler"
         app:tabTextAppearance="@style/MainActivityTabLayout"
         app:layout_constraintTop_toBottomOf="@id/main_toolbar"
@@ -59,5 +59,7 @@
         app:layout_constraintBottom_toTopOf="@id/frag_bottom_player"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

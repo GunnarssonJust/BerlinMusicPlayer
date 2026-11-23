@@ -7,6 +7,8 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
+import java.util.Locale;
+
 public class MusicFiles implements Parcelable {
     private String path;
     private String title;
@@ -138,5 +140,19 @@ public class MusicFiles implements Parcelable {
             return new MusicFiles[size];
         }
     };
+    public static String formatDuration(String duration) {
+        try {
+            long millis = Long.parseLong(duration);
+            long totalseconds = millis / 1000;
+            long hours = totalseconds / 3600;
+            long minutes = (totalseconds % 3600) / 60;
+            long seconds = totalseconds % 60;
+            return hours > 0
+                    ? String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+                    : String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
+        } catch (NumberFormatException e) {
+            return "0:00";
+        }
+    }
 
 }

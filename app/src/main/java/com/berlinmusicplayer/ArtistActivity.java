@@ -1,12 +1,19 @@
 package com.berlinmusicplayer;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -19,23 +26,33 @@ import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.util.ArrayList;
 
-public class ArtistActivity extends AppCompatActivity {
+public class ArtistActivity extends BaseActivity {
 
     ImageView artistPhoto;
     TextView artistTitle;
-    String artistName;
+
+    String artistName,artistYear;
     ArrayList<MusicFiles> artistSongs = new ArrayList<>();
     ArtistPagerAdapter artistPagerAdapter;
+    ViewPager2 viewPager;
+    private BroadcastReceiver songChangeReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_artist);
+        getWindow().setStatusBarColor(getColor(R.color.darkgreen));
+        getWindow().setNavigationBarColor(getColor(R.color.darkestgreen));
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
 
         artistPhoto = findViewById(R.id.artistPhoto);
         artistTitle = findViewById(R.id.artistTitle);
 		TabLayout tabLayout = findViewById(R.id.artist_tabLayout);
-        ViewPager2 viewPager = findViewById(R.id.artist_viewPager);														  
+        viewPager = findViewById(R.id.artist_viewPager);
         artistName = getIntent().getStringExtra("artistName");
 
         if (artistName == null || artistName.isEmpty()) {
@@ -57,7 +74,6 @@ public class ArtistActivity extends AppCompatActivity {
             return;
         }
 
-
         // Cover des ersten Songs als Künstler-Bild laden
 	
 		byte[] image = getAlbumArt(artistSongs.get(0).getPath());
@@ -69,7 +85,7 @@ public class ArtistActivity extends AppCompatActivity {
         
 
         // ViewPager2 mit Adapter verknüpfen
-        ArtistPagerAdapter pagerAdapter = new ArtistPagerAdapter(this, artistName, artistSongs);
+        ArtistPagerAdapter pagerAdapter = new ArtistPagerAdapter(this, artistName, artistYear,artistSongs);
         viewPager.setAdapter(pagerAdapter);
 
         // TabLayout mit ViewPager2 verknüpfen → Tab-Titel setzen
@@ -79,6 +95,12 @@ public class ArtistActivity extends AppCompatActivity {
                 case 1: tab.setText("Titel"); break;
             }
         }).attach();
+    }
+
+    @Override
+    protected void onMusicServiceConnected() {
+        // z.B. leer lassen, falls ArtistDetails nichts extra braucht,
+        // sobald der MusicService verbunden ist
     }
 
     private byte[] getAlbumArt(String path) {
@@ -146,5 +168,36 @@ public class ArtistActivity extends AppCompatActivity {
     protected void onResume(){
         super.onResume();
         if(artistPagerAdapter!=null)artistPagerAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        songChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                // ← Aktuelles Fragment holen und Adapter direkt aktualisieren!
+                Fragment current = getSupportFragmentManager()
+                        .findFragmentByTag("f" + viewPager.getCurrentItem());
+                if (current instanceof ArtistSongsFragment) {
+                    ((ArtistSongsFragment) current).refreshAdapter();
+                }
+            }
+        };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            registerReceiver(songChangeReceiver,
+                    new IntentFilter("SONG_CHANGED"), RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(songChangeReceiver, new IntentFilter("SONG_CHANGED"),RECEIVER_EXPORTED);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (songChangeReceiver != null) {
+            unregisterReceiver(songChangeReceiver);
+            songChangeReceiver = null;
+        }
     }
 }

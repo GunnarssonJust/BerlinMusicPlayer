@@ -50,10 +50,12 @@ public class PlaylistManager {
     public static class Playlist {
         public String name;
         public ArrayList<String> songIds; // Song-IDs
+        public String lastPlayedId;
 
         public Playlist(String name) {
             this.name = name;
             this.songIds = new ArrayList<>();
+            this.lastPlayedId = null;
         }
     }
 
@@ -165,7 +167,41 @@ public class PlaylistManager {
         }
         return songs;
     }
+
+    public MusicFiles getLastPlayedOfPlaylist(Playlist playlist){
+        if(playlist.songIds.isEmpty()) return null;
+        if(playlist.lastPlayedId != null && playlist.songIds.contains(playlist.lastPlayedId)){
+            MusicFiles s = musicMap.get(playlist.lastPlayedId);
+            if (s != null) return s;
+        }
+        for(String id : playlist.songIds) {
+            MusicFiles s = musicMap.get(id);
+            if (s != null) {
+                return s;
+            }
+        }
+        return null;
+    }
+    public void setLastPlayedInPlaylist(int playlistIndex, String songId){
+        ArrayList<Playlist> playlists = getPlaylists();
+        if (playlistIndex >= 0 && playlistIndex < playlists.size()) {
+            playlists.get(playlistIndex).lastPlayedId = songId;
+            savePlaylists(playlists);
+        }
+    }
+    public String getLastPlayedInPlaylist(int playlistIndex){
+        ArrayList<Playlist> playlists = getPlaylists();
+        if (playlistIndex >= 0 && playlistIndex < playlists.size()) {
+            return playlists.get(playlistIndex).lastPlayedId;
+        }
+        return null;
+    }
+
+
     public ArrayList<MusicFiles> getMusicFiles(){
         return musicFiles;
     }
+
+
+
 }

@@ -43,11 +43,13 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.MyHolder> 
     public void onBindViewHolder(@NonNull ArtistAdapter.MyHolder holder, @SuppressLint("RecyclerView") final int position) {
         // 1. Setze den Künstlernamen
         holder.artist_name.setText(artistFiles.get(position).getArtist());
+        holder.artist_year.setText(artistFiles.get(position).getYear());
 
         // 2. Lade das Album-Cover performant (genau wie im AlbumAdapter)
         // Cover des repräsentativen Songs für diesen Künstler.
         Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
         String albumId = artistFiles.get(position).getAlbumId();
+        String albumYear = artistFiles.get(position).getYear();
         Uri albumArtUri = ContentUris.withAppendedId(sArtworkUri, Long.parseLong(albumId));
 
         Glide.with(mContext)
@@ -73,11 +75,14 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.MyHolder> 
     public class MyHolder extends RecyclerView.ViewHolder {
         ImageView artist_image;
         TextView artist_name;
+        TextView artist_year;
+
 
         public MyHolder(@NonNull View itemView) {
             super(itemView);
             artist_image = itemView.findViewById(R.id.albumitem_image);
             artist_name = itemView.findViewById(R.id.album_subtext);
+            artist_year = itemView.findViewById(R.id.album_year);
         }
     }
 

@@ -3,6 +3,7 @@ package com.berlinmusicplayer;
 import android.content.Context;
 import android.content.Intent;
 
+
 public class NavigationUtils {
     public static Intent getNowPlayingIntent(Context context) {
 

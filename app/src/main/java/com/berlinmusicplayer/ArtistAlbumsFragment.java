@@ -22,7 +22,7 @@ public class ArtistAlbumsFragment extends Fragment {
     private static final String ARG_ARTIST = "artistName";
     private String artistName;
 
-    public static ArtistAlbumsFragment newInstance(String artistName) {
+    public static ArtistAlbumsFragment newInstance(String artistName,String artistYear) {
         ArtistAlbumsFragment fragment = new ArtistAlbumsFragment();
         Bundle args = new Bundle();
         args.putString(ARG_ARTIST, artistName);
@@ -56,7 +56,7 @@ public class ArtistAlbumsFragment extends Fragment {
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.ARTIST + "=?";
         String[] selectionArgs = new String[]{artistName};
-        String sortOrder = MediaStore.Audio.Media.ALBUM + " COLLATE NOCASE ASC";
+        String sortOrder = MediaStore.Audio.Media.YEAR + " DESC";
 
         String[] projection = {
                 MediaStore.Audio.Media.ALBUM,
@@ -65,10 +65,8 @@ public class ArtistAlbumsFragment extends Fragment {
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.YEAR,
-                //MediaStore.Audio.Media.GENRE,
                 MediaStore.Audio.Media.DATE_ADDED,
                 MediaStore.Audio.Media.SIZE
         };
@@ -83,7 +81,6 @@ public class ArtistAlbumsFragment extends Fragment {
                 int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
                 int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
                 int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
-                //int albumGenreIdx = cursor.getColumnIndex(MediaStore.Audio.Media.GENRE);
                 int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
                 int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
 
@@ -99,7 +96,6 @@ public class ArtistAlbumsFragment extends Fragment {
                         String id = cursor.getString(idIdx);
                         String albumId = cursor.getString(albumIdIdx);
                         String albumYear = cursor.getString(albumYearIdx);
-                        //String albumgenre = cursor.getString(albumGenreIdx);
                         long dateAdded = cursor.getLong(dateAddedIdx);
                         long size = cursor.getLong(sizeIdx);
 

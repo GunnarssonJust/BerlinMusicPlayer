@@ -68,35 +68,50 @@
         <TextView
             android:id="@+id/music_file_name"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="21dp"
             android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="6dp"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
             android:text="Langer Songtitel zum Testen"
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:singleLine="true"
-            android:ellipsize="marquee"
-            android:marqueeRepeatLimit="marquee_forever"
+            app:layout_constraintBottom_toTopOf="@id/artist_file_name"
+            app:layout_constraintEnd_toStartOf="@id/song_duration"
             app:layout_constraintStart_toEndOf="@id/left_block_container"
-            app:layout_constraintEnd_toStartOf="@id/menuMore"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/artist_file_name"
-            app:layout_constraintVertical_chainStyle="packed"
-            app:layout_constraintVertical_bias="0.35" />
+            app:layout_constraintVertical_bias="0.35"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <TextView
+            android:id="@+id/song_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="21dp"
+            android:layout_marginEnd="8dp"
+            android:gravity="end|center_vertical"
+            android:textColor="@color/grey"
+            android:textSize="12sp"
+            android:singleLine="true"
+            app:layout_constraintEnd_toStartOf="@id/menuMore"
+            app:layout_constraintTop_toTopOf="@id/music_file_name"
+            app:layout_constraintBottom_toBottomOf="@id/music_file_name"
+            tools:text="4:32" />
 
         <TextView
             android:id="@+id/artist_file_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_width="245dp"
+            android:layout_height="20dp"
+            android:ellipsize="end"
+            android:singleLine="true"
             android:text="Künstlername"
             android:textColor="@color/grey"
             android:textSize="14sp"
-            android:singleLine="true"
-            android:ellipsize="end"
-            app:layout_constraintStart_toStartOf="@id/music_file_name"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@id/music_file_name"
-            app:layout_constraintTop_toBottomOf="@id/music_file_name"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="@id/music_file_name"
+            app:layout_constraintTop_toBottomOf="@id/music_file_name" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

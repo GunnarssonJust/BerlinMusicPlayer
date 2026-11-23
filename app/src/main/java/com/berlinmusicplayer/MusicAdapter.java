@@ -34,7 +34,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
     private Context mContext;
     private ArrayList<MusicFiles> mFiles;
     private boolean isInSearchMode = false;
-    MusicService musicService;
 
     MusicAdapter(Context mContext, ArrayList<MusicFiles> mFiles) {
         this.mContext = mContext;
@@ -66,8 +65,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
             holder.artist_name.setTextColor(mContext.getColor(android.R.color.darker_gray));
         }
 
-
-
         holder.trackNumber.setVisibility(View.GONE);
         holder.album_art.setVisibility(View.VISIBLE);
 
@@ -88,16 +85,29 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MyViewHolder
             popupMenu.setOnMenuItemClickListener(item -> {
                 if (item.getItemId() == R.id.delete) {
                     deleteFile(position, v);
+                    return true;
                 }else if (item.getItemId() == R.id.add_to_playlist) {
                     showAddToPlaylistDialog(position, v);
+                    return true;
+                }else if(item.getItemId()== R.id.album_link){
+                    Intent intent = new Intent(mContext, AlbumDetails.class);
+                    intent.putExtra("albumName", mFiles.get(position).getAlbum());
+                    intent.putExtra("albumId", mFiles.get(position).getAlbumId());
+                    mContext.startActivity(intent);
+                    return true;
+                }else if(item.getItemId()==R.id.artist_link){
+                    Intent intent = new Intent(mContext, ArtistActivity.class);
+                    intent.putExtra("artistName", mFiles.get(position).getArtist());
+                    mContext.startActivity(intent);
+                    return true;
                 }
-                return true;
+                return false;
             });
+            popupMenu.show();
         });
 
 
         holder.itemView.setOnClickListener(v -> {
-            // --- HIER IST DIE FINALE, SAUBERE LÖSUNG ---
             Log.d("MusicAdapter", "Klick in Hauptliste/Suche auf Position " + position);
 
             // 1. Erstelle den EINEN, klaren und robusten "Reset"-Befehl für den Service.

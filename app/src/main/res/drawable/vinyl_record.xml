@@ -28,7 +28,7 @@
 
     <!-- Cover-Bereich: dunklerer Kreis wo das Album-Cover liegt -->
     <path
-        android:pathData="M140,140 m-80,0 a80,80 0 1,0 160,0 a80,80 0 1,0 -160,0"
+        android:pathData="M140,140 m-70,0 a80,80 0 1,0 160,0 a80,80 0 1,0 -160,0"
         android:fillColor="#111111"/>
 
     <!-- Innere Rillen um Cover herum -->

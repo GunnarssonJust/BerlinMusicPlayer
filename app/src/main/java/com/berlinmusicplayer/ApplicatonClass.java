@@ -5,6 +5,8 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.os.Build;
 
+import androidx.appcompat.app.AppCompatDelegate;
+
 public class ApplicatonClass extends Application {
     public static final String CHANNEL_ID_2 = "CHANNEL_2";
     public static final String ACTION_NEXT = "next";
@@ -15,6 +17,7 @@ public class ApplicatonClass extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         createNotificationChannel();
     }
 

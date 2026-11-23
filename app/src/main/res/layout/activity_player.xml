@@ -162,7 +162,22 @@
         <!-- ═══════════════════════════════════════════ -->
 
         <!-- Funkturm — ganz links -->
+
+
         <ImageView
+            android:id="@+id/teufelsberg"
+            android:layout_width="69dp"
+            android:layout_height="35dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="-2dp"
+            android:layout_marginBottom="19dp"
+            android:contentDescription="@string/teufelsberg"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_teufelsberg" />
+
+        <ImageView
+            android:id="@+id/funkturm"
             android:layout_width="54dp"
             android:layout_height="65dp"
             android:layout_alignParentStart="true"
@@ -182,6 +197,17 @@
             android:layout_marginEnd="-2dp"
             android:scaleType="fitEnd"
             android:src="@drawable/im_gedaechtniskirche"/>
+        <ImageView
+            android:id="@+id/auster"
+            android:layout_width="35dp"
+            android:layout_height="28dp"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@+id/gedaechtniskirche"
+            android:layout_toStartOf="@id/reichstag"
+            android:layout_marginEnd="2dp"
+            android:scaleType="fitEnd"
+            android:src="@drawable/ic_auster"/>
+
 
         <!-- Reichstag — rechts von Mitte (Mitte/Ost) -->
         <ImageView
@@ -206,6 +232,17 @@
             android:scaleType="centerCrop"
             android:src="@drawable/ic_fernsehturm" />
 
+        <!-- Brandenburger Tor vor Fernsehturm-->
+        <ImageView
+            android:id="@+id/brandenburgertor"
+            android:layout_width="45dp"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="21dp"
+            android:layout_marginBottom="1dp"
+            android:layout_toEndOf="@+id/reichstag"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_gate_white" />
         <!-- ═══════════════════════════════════════════ -->
         <!-- BUTTONS — symmetrisch zentriert            -->
         <!-- ═══════════════════════════════════════════ -->

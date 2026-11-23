@@ -1,15 +1,16 @@
 package com.berlinmusicplayer;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
-import android.app.NotificationChannel;
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -21,11 +22,10 @@ import android.graphics.Outline;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -68,17 +68,22 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     private boolean isVinylDesign = false;
     private float vinylRotationOffset = 0f;
     private ImageView toneArm;
-    private CountDownTimer sleepTimer;
-    private static final int SLEEP_TIMER_NOTIFICATION_ID = 999;
-    private NotificationManager notificationManager;
-    private long sleepTimeRemaining = 0;
     //public static final String poS = "POSITION";
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         if (D) Log.d(TAG, "Esel PlayerActivity: onCreate");
         setContentView(R.layout.activity_player);
+        getWindow().setStatusBarColor(getColor(R.color.darkestgreen));
+        getWindow().setNavigationBarColor(getColor(R.color.darkestgreen));
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
         initViews();
         getIntentMethod();
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -102,16 +107,6 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_gate));
         mContainer = findViewById(R.id.mContainer);
         vinylContainer = findViewById(R.id.vinyl_container);
-        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    "sleep_timer_channel",
-                    "Sleep-Timer",
-                    NotificationManager.IMPORTANCE_LOW);
-            channel.setSound(null, null);  // Kein Sound
-            notificationManager.createNotificationChannel(channel);
-        }
-
         mContainer.setOnTouchListener(new View.OnTouchListener(){
             private float startY;
             private static final int SWIPE_THRESHOLD = 150;
@@ -129,19 +124,6 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
                         return true;
                 }
                 return false;
-            }
-        });
-
-        PlayerActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (musicService != null && musicService.isPlaying()) {
-                    int mCurrentPositionMillis = musicService.getCurrentPosition();
-                    int mCurrentPositionSeconds = mCurrentPositionMillis / 1000;
-                    seekBar.setProgress(mCurrentPositionSeconds);
-                    duration_played.setText(formattedTime(mCurrentPositionSeconds));
-                }
-                handler.postDelayed(this, 1000);
             }
         });
 
@@ -174,10 +156,6 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         return true;
     }
 
-    private int getPosition() {
-        return position;
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -188,6 +166,7 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             updateUiComponents();
         if (musicService != null && musicService.isPlaying()) {
             handler.post(updateSeekbar);
+            updateUiComponents();
         }
     }
 
@@ -199,7 +178,11 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         if (handler != null) {
             handler.removeCallbacks(updateSeekbar);
         }
-
+        try{
+            unbindService(this);
+        }catch (IllegalArgumentException ignored){}
+        musicService = null;
+        if (D) Log.d(TAG, "Esel PlayerActivity: onPause");
     }
 
     @Override
@@ -221,10 +204,6 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         runOnUiThread(this::updateUiComponents);
     }
 
-    private int getRandom(int size) {
-        if (D) Log.d(TAG, "Esel PlayerActivity: getRandom");
-        return new Random().nextInt(size);
-    }
 
     public void onPlayPauseBtnClicked() {
         if (D) Log.d(TAG, "Esel PlayerActivity: playPauseBtnClicked");
@@ -406,41 +385,29 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         musicService = myBinder.getService();
         musicService.setCallBack(this);
         updateUiComponents();
+
         // 2. Prüfen, ob ein Startbefehl vom Intent vorliegt
         int startPosition = getIntent().getIntExtra("position", -1);
 
         if (startPosition != -1) {
-            // --- FALL A: EIN NEUER SONG SOLL GESTARTET WERDEN ---
-            Log.d(TAG, "onServiceConnected: Befehl zum Starten eines neuen Songs an Position " + startPosition + " erhalten.");
-
-            // Hole die Playlist aus dem Intent, falls eine mitgegeben wurde (von AlbumDetails, Suche etc.)
+            Log.d(TAG, "onServiceConnected: Neuer Song an Position " + startPosition);
             ArrayList<MusicFiles> newPlaylist = getIntent().getParcelableArrayListExtra("playlist");
-
             if (newPlaylist == null) {
                 newPlaylist = getIntent().getParcelableArrayListExtra("albumSongs");
             }
-
             if (newPlaylist != null && !newPlaylist.isEmpty()) {
-                // Wir haben eine spezifische Playlist (z.B. ein Album). Gib sie dem Service.
                 musicService.playNewPlayList(newPlaylist, startPosition);
             } else {
-                // Keine spezifische Playlist wurde mitgegeben (z.B. Klick aus der Hauptliste).
-                // Befiehl dem Service, seine Master-Liste zu verwenden.
                 musicService.playNewPlayList(musicService.getMusicFiles(), startPosition);
             }
-
-            // WICHTIG: "Verbrauche" die Position, damit sie beim nächsten onResume (z.B. nach Bildschirmdrehung) nicht wieder ausgelöst wird.
             getIntent().removeExtra("playlist");
             getIntent().removeExtra("position");
-
         } else {
-            // --- FALL B: KEIN NEUER SONG ANGEFORDERT (z.B. bei Rückkehr zur Activity) ---
-            // Synchronisiere die UI einfach mit dem, was gerade im Service läuft.
-            Log.d(TAG, "onServiceConnected: Kein neuer Song, synchronisiere UI mit laufendem Zustand.");
+            Log.d(TAG, "onServiceConnected: Synchronisiere UI mit laufendem Zustand.");
             updateUiComponents();
         }
 
-        // 3. UI-Listener setzen (wird sicherheitshalber hier gemacht, nachdem der Service verbunden ist)
+        // 3. UI-Listener setzen — nur einmal!
         playPauseBtn.setOnClickListener(view -> onPlayPauseBtnClicked());
         nextBtn.setOnClickListener(view -> {
             if (musicService != null) musicService.nextBtnClicked();
@@ -448,47 +415,22 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         prevBtn.setOnClickListener(view -> {
             if (musicService != null) musicService.previousBtnClicked();
         });
-
-        // 4. Initialisiere den SeekBar-Updater-Thread
-        handler.post(updateSeekbar);
-
-        // 5. Initialen Zustand der Shuffle/Repeat-Buttons setzen
-        if (musicService != null) {
-            shufflebtn.setImageResource(musicService.getShuffleState() ? R.drawable.ic_shuffle_green : R.drawable.ic_shuffle);
-            repeatBtn.setImageResource(musicService.getRepeatState() ? R.drawable.ic_repeat_red : R.drawable.ic_repeat);
-        }
-
-
-        // 4. Setze die UI-Listener. Dies sollte nur einmal passieren.
-        playPauseBtn.setOnClickListener(view -> onPlayPauseBtnClicked());
-        nextBtn.setOnClickListener(view -> {
-            if (musicService != null) {
-                musicService.nextBtnClicked();
-            }
-        });
-        prevBtn.setOnClickListener(view -> {
-            if (musicService != null) {
-                musicService.previousBtnClicked();
-            }
-        });
         playListButton.setOnClickListener(view -> {
-            if(musicService == null) return;
+            if (musicService == null) return;
             PlaylistManager manager = PlaylistManager.getInstance(this);
             ArrayList<PlaylistManager.Playlist> playlists = manager.getPlaylists();
-            if(playlists.isEmpty()){
-                Toast.makeText(this,"Keine Playlists vorhanden!",Toast.LENGTH_SHORT).show();
+            if (playlists.isEmpty()) {
+                Toast.makeText(this, "Keine Playlists vorhanden!", Toast.LENGTH_SHORT).show();
+                return;  // ← auch return hinzugefügt!
             }
             String[] names = new String[playlists.size()];
             for (int i = 0; i < playlists.size(); i++) {
                 names[i] = playlists.get(i).name;
             }
-
-            // Aktuellen Song holen
             ArrayList<MusicFiles> playlist = musicService.getCurrentPlaylist();
             int pos = musicService.getPosition();
             if (playlist == null || pos < 0 || pos >= playlist.size()) return;
             String songId = playlist.get(pos).getId();
-
             new AlertDialog.Builder(this)
                     .setTitle("Zur Playlist hinzufügen")
                     .setItems(names, (dialog, which) -> {
@@ -497,11 +439,12 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
                     })
                     .setNegativeButton("Abbrechen", null)
                     .show();
-
         });
 
-        // 5. Initialisiere den SeekBar-Updater-Thread
+        // 4. SeekBar-Updater starten — nur einmal!
         handler.post(updateSeekbar);
+
+        // 5. Shuffle/Repeat Buttons setzen
         shufflebtn.setImageResource(musicService.getShuffleState() ? R.drawable.ic_shuffle_green : R.drawable.ic_shuffle);
         repeatBtn.setImageResource(musicService.getRepeatState() ? R.drawable.ic_repeat_red : R.drawable.ic_repeat);
     }
@@ -591,11 +534,14 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
         }
         else if(itemId == R.id.player_design){
             showPlayerDesignDialog();
-        } else if(itemId == R.id.menu_equalizer){
+            return true;
+        }
+        else if(itemId == R.id.menu_equalizer){
             showEqualizerDialog();
             return true;
-        }else if(itemId == R.id.menu_sleep_timer){
-            showSleepTimerDialog();
+        }
+        else if(itemId == R.id.menu_sleep_timer){
+            SleepTimerDialog.show(this, musicService);
             return true;
         }
         else if(itemId == R.id.menu_share) {}//TODO
@@ -607,9 +553,9 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-
-        // UI einfach neu syncen
-        updateUiComponents();
+        new Handler(Looper.getMainLooper()).postDelayed(()->{
+            updateUiComponents();
+        },500);
     }
 
     private void goToMainActivity() {
@@ -709,16 +655,12 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
     private void startVinylRotation() {
         if (!isVinylDesign || vinylRotation == null || vinylContainer == null) return;
         vinylContainer.startAnimation(vinylRotation);
-        if (!isVinylDesign || vinylRotation == null || vinylContainer == null) return;
-        vinylContainer.startAnimation(vinylRotation);
         moveToneArmToPlay();  // ← NEU: Arm auf Platte!
     }
 
     // Rotation stoppen (Position merken):
     private void stopVinylRotation() {
         if (vinylContainer != null) {
-            // Aktuelle Rotation merken für nahtlosen Neustart!
-            vinylRotationOffset = vinylContainer.getRotation();
             vinylContainer.clearAnimation();
             }
             moveToneArmToPause();  // ← NEU: Arm zurückziehen!
@@ -852,103 +794,11 @@ public class PlayerActivity extends AppCompatActivity implements ActionPlaying, 
             return String.format("%.1f kHz", freqHz / 1000.0);
         }
     }
-    private void showSleepTimerDialog() {
-        String[] times = {"5 Min", "15 Min", "30 Min", "60 Min", "Aus"};
-        long[] milliseconds = {
-                5 * 60 * 1000,      // 5 Min
-                15 * 60 * 1000,     // 15 Min
-                30 * 60 * 1000,     // 30 Min
-                60 * 60 * 1000,     // 60 Min
-                0                   // Aus
-        };
-        new AlertDialog.Builder(this,R.style.SleepTimerDialogTheme)
-                .setTitle("⏰ Sleep-Timer")
-                .setSingleChoiceItems(times, -1, (dialog, which) -> {
-                    if (milliseconds[which] == 0) {
-                        // Timer ausschalten
-                        stopSleepTimer();
-                        Toast.makeText(this, "Sleep-Timer aus", Toast.LENGTH_SHORT).show();
-                    } else {
-                        // Timer starten
-                        startSleepTimer(milliseconds[which]);
-                        Toast.makeText(this, "Timer: " + times[which], Toast.LENGTH_SHORT).show();
-                    }
-                    dialog.dismiss();
-                })
-                .show();
-    }
-
-
-
-
-
-
-    private void startSleepTimer(long milliseconds) {
-        stopSleepTimer();  // Alten Timer abbrechen falls einer aktiv
-
-        sleepTimeRemaining = milliseconds;
-        sleepTimer = new CountDownTimer(milliseconds, 1000) {
-            @Override
-            public void onTick(long msUntilFinished) {
-                sleepTimeRemaining = msUntilFinished;
-                // Formatiere Zeit: "45:30" oder "1:23:45"
-                long seconds = msUntilFinished / 1000;
-                long minutes = seconds / 60;
-                long hours = minutes / 60;
-                long remainingSeconds = seconds % 60;
-                long remainingMinutes = minutes % 60;
-
-                String timeText;
-                if (hours > 0) {
-                    timeText = String.format("%d:%02d:%02d", hours, remainingMinutes, remainingSeconds);
-                } else {
-                    timeText = String.format("%d:%02d", minutes, remainingSeconds);
-                }
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(PlayerActivity.this, "sleep_timer_channel")
-                        .setSmallIcon(R.mipmap.ic_pause)
-                        .setContentTitle("Sleep Timer")
-                        .setContentText("Verbleibend: " + timeText)
-                        .setProgress(0,0,false)
-                        .setOngoing(true)
-                        .setPriority(NotificationCompat.PRIORITY_LOW);
-                notificationManager.notify(SLEEP_TIMER_NOTIFICATION_ID, builder.build());
-            }
-
-            @Override
-            public void onFinish() {
-                sleepTimeRemaining = 0;
-                // Musik stoppen
-                if (musicService != null) {
-                    musicService.pause();
-                    updatePlayPauseButton();
-                }
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(PlayerActivity.this, "sleep_timer_channel")
-                        .setSmallIcon(R.mipmap.ic_play_pressed)
-                        .setContentTitle("Sleep Timer")
-                        .setContentText("Zeit abgelaufen - Musik gestoppt")
-                        .setOngoing(false)
-                        .setPriority(NotificationCompat.PRIORITY_LOW);
-                notificationManager.notify(SLEEP_TIMER_NOTIFICATION_ID, builder.build());
-                Toast.makeText(PlayerActivity.this,"Sleep Timer: Musik gestoppt",Toast.LENGTH_SHORT).show();
-            }
-        };
-        sleepTimer.start();
-    }
-    //Timer stoppen:
-    private void stopSleepTimer() {
-        if (sleepTimer != null) {
-            sleepTimer.cancel();
-            sleepTimer = null;
-            sleepTimeRemaining = 0;
-        }
-        notificationManager.cancel(SLEEP_TIMER_NOTIFICATION_ID);
-    }
 
     //onDestroy() — Timer aufräumen:
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopSleepTimer();  // ← Timer stoppen bevor Activity zerstört wird
+        if(musicService != null) musicService.setCallBack(null);
     }
-
 }

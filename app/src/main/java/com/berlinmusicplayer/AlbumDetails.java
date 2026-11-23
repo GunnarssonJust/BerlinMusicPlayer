@@ -1,16 +1,24 @@
 package com.berlinmusicplayer;
 
-import androidx.appcompat.app.AppCompatActivity;
+import static com.berlinmusicplayer.MusicFiles.formatDuration;
+
+import androidx.activity.EdgeToEdge;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -19,19 +27,26 @@ import com.bumptech.glide.Glide;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class AlbumDetails extends AppCompatActivity {
+public class AlbumDetails extends BaseActivity {
     RecyclerView recyclerView;
     ImageView albumPhoto;
-    String albumName,albumId;
-    TextView album_Name,album_artist, albumYear;
-    int songID;
+    String albumName, albumId;
+    TextView album_Name, album_artist, albumYear, album_duration;
     ArrayList<MusicFiles> albumSongs = new ArrayList<>();
     AlbumDetailsAdapter albumDetailsAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_album_details);
+
+        getWindow().setStatusBarColor(getColor(R.color.darkgreen));
+        getWindow().setNavigationBarColor(getColor(R.color.darkestgreen));
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
 
         recyclerView = findViewById(R.id.album_recyclerView);
         albumPhoto = findViewById(R.id.albumPhoto);
@@ -40,16 +55,17 @@ public class AlbumDetails extends AppCompatActivity {
         album_Name = findViewById(R.id.album_name);
         album_artist = findViewById(R.id.artist);
         albumYear = findViewById(R.id.album_details_year);
+        album_duration = findViewById(R.id.album_details_duration);
 
         albumSongs = getAlbumSongs(this, albumName);
 
-        if(!albumSongs.isEmpty()&& albumSongs.get(0).getYear() != null){
-            album_Name.setText(albumSongs.get(0).getAlbum());
-            album_artist.setText(albumSongs.get(0).getArtist());
-            albumYear.setText(albumSongs.get(0).getYear());
-        }else{
+        if (!albumSongs.isEmpty()) {
+            updateAlbumHeader();
+        } else {
             album_Name.setText(R.string.unbekanntes_album);
+            album_artist.setText(R.string.unbekanner_artist);
             albumYear.setText(R.string.unbekanntes_jahr);
+            album_duration.setText(R.string.duration);
         }
 
         if (!albumSongs.isEmpty()) {
@@ -62,7 +78,6 @@ public class AlbumDetails extends AppCompatActivity {
                         .placeholder(R.mipmap.ic_play)
                         .error(R.mipmap.ic_play)
                         .into(albumPhoto);
-                albumYear.setText(albumSongs.get(0).getYear());
             } catch (NumberFormatException e) {
                 Glide.with(this).load(R.mipmap.ic_play).into(albumPhoto);
             }
@@ -71,6 +86,14 @@ public class AlbumDetails extends AppCompatActivity {
         albumDetailsAdapter = new AlbumDetailsAdapter(this, albumSongs);
         recyclerView.setAdapter(albumDetailsAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, RecyclerView.VERTICAL, false));
+    }
+
+    @Override
+    protected void onMusicServiceConnected() {
+        // Diese Methode wird aufgerufen, sobald die Verbindung zum MusicService steht.
+        if (albumDetailsAdapter != null) {
+            albumDetailsAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -83,19 +106,9 @@ public class AlbumDetails extends AppCompatActivity {
             albumDetailsAdapter.updateList(albumSongs);
             albumDetailsAdapter.notifyDataSetChanged();
         }
+        updateAlbumHeader();
     }
 
-    private byte[] getAlbumArt(String uri){
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        retriever.setDataSource(uri);
-        byte[] art = retriever.getEmbeddedPicture();
-        try {
-            retriever.release();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return art;
-    }
     public ArrayList<MusicFiles> getAlbumSongs(Context context, String albumName) {
         ArrayList<MusicFiles> albumSongList = new ArrayList<>();
         if (albumName == null) return albumSongList;
@@ -128,37 +141,94 @@ public class AlbumDetails extends AppCompatActivity {
                 MediaStore.Audio.Media.SIZE
         };
 
-        Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder);
+        try (Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, sortOrder)) {
+            if (cursor != null) {
+                int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+                int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
+                int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
+                int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
+                while (cursor.moveToNext()) {
+                    String album = cursor.getString(albumColumn);
+                    String title = cursor.getString(titleIdx);
+                    String duration = cursor.getString(durationIdx);
+                    String path = cursor.getString(pathIdx);
+                    String artist = cursor.getString(artistIdx);
+                    String id = cursor.getString(idIdx);
+                    String albumId = cursor.getString(albumIdIdx);
+                    String albumYear = cursor.getString(albumYearIdx);
+                    long dateAdded = cursor.getLong(dateAddedIdx);
+                    long size = cursor.getLong(sizeIdx);
 
-        if (cursor != null) {
-            int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
-            int titleIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
-            int durationIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
-            int pathIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-            int artistIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
-            int idIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
-            int albumIdIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-            int albumYearIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR);
-            int dateAddedIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED);
-            int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE);
-            while (cursor.moveToNext()) {
-                String album = cursor.getString(albumColumn);
-                String title = cursor.getString(titleIdx);
-                String duration = cursor.getString(durationIdx);
-                String path = cursor.getString(pathIdx);
-                String artist = cursor.getString(artistIdx);
-                String id = cursor.getString(idIdx);
-                String albumId = cursor.getString(albumIdIdx);
-                String albumYear = cursor.getString(albumYearIdx);
-                long dateAdded = cursor.getLong(dateAddedIdx);
-                long size = cursor.getLong(sizeIdx);
-
-                MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id,albumId,albumYear,dateAdded,size);
-                albumSongList.add(musicFile);
+                    MusicFiles musicFile = new MusicFiles(path, title, artist, album, duration, id, albumId, albumYear, dateAdded, size);
+                    albumSongList.add(musicFile);
+                }
             }
-            cursor.close();
         }
         return albumSongList;
     }
 
+    private void updateAlbumHeader() {
+        if (!albumSongs.isEmpty()) {
+            album_Name.setText(albumSongs.get(0).getAlbum());
+            album_artist.setText(albumSongs.get(0).getArtist());
+            
+            try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
+                retriever.setDataSource(albumSongs.get(0).getPath());
+                String year = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR);
+                
+                Log.d("YEAR_DEBUG", "Album=" + albumSongs.get(0).getAlbum() +
+                        "Year= " + year + "Duration=" + albumSongs.get(0).getDuration());
+                albumYear.setText(
+                        year != null && !year.isEmpty()
+                                ? year
+                                : getString(R.string.unbekanntes_jahr)
+                );
+            } catch (IOException | IllegalArgumentException e) {
+                albumYear.setText(R.string.unbekanntes_jahr);
+            }
+
+            long totalMillis = 0;
+            for (MusicFiles song : albumSongs) {
+                try {
+                    totalMillis += Long.parseLong(song.getDuration());
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            album_duration.setText(formatDuration(String.valueOf(totalMillis)));
+        }
+    }
+
+    private BroadcastReceiver songChangeReceiver;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        songChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (albumDetailsAdapter != null) albumDetailsAdapter.notifyDataSetChanged();
+            }
+        };
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(songChangeReceiver,
+                    new IntentFilter("SONG_CHANGED"), Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(songChangeReceiver, new IntentFilter("SONG_CHANGED"));
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (songChangeReceiver != null) {
+            unregisterReceiver(songChangeReceiver);
+        }
+    }
 }

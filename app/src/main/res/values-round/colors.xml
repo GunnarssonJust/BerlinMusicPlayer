@@ -3,4 +3,5 @@
     <color name="yellow">#FFEB3B</color>
     <color name="darkred">#990000</color>
     <color name="darkestred" />
+    <color name="lightergreen">#93F6A3</color>
 </resources>

@@ -6,32 +6,25 @@ import static com.berlinmusicplayer.MusicService.MUSIC_LAST_PLAYED;
 import static com.berlinmusicplayer.MusicService.SONG_NAME;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
@@ -42,7 +35,8 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener, ServiceConnection, MusicServiceCallback {
+
+public class MainActivity extends BaseActivity implements SearchView.OnQueryTextListener {
 
     public static final String TAG = "MainActivity";
     public static final int REQUEST_CODE = 1;
@@ -52,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     public static String MY_SORT_PREF = "SortOrder";
     private boolean D = true;
     private ViewPagerAdapter viewPagerAdapter;
-    public MusicService musicService;
     private SongsFragment songsFragment;
     private AlbumFragment albumFragment;
     private ArtistFragment artistFragment;
@@ -66,8 +59,16 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getWindow().setStatusBarColor(getColor(R.color.darkgreen));
+        getWindow().setNavigationBarColor(getColor(R.color.darkestgreen));
+        WindowInsetsControllerCompat controller =
+               new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
         toolbar.setOverflowIcon(ContextCompat.getDrawable(this, R.drawable.ic_gate_white));
@@ -81,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             SharedPreferences prefs = getSharedPreferences(MusicService.MUSIC_LAST_PLAYED, MODE_PRIVATE);
             String lastMusicFile = prefs.getString(MusicService.MUSIC_FILE, null);
 
-            if (savedInstanceState == null && musicService == null) {
+            if (musicService == null) {
                 // Nur beim ersten Start der App!
                 if (lastMusicFile != null) {
                     Intent restoreIntent = new Intent(this, MusicService.class);
@@ -90,14 +91,17 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 }
             }
         }
-		
+        Intent intent = getIntent();
+        if(Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null){
+            Uri audioUri = intent.getData();
+            serviceIntent.putExtra("actionName", "PLAY_URI");
+            serviceIntent.putExtra("uri", audioUri.toString());
+            startService(serviceIntent);
+        }
+
 		// Service starten (damit onStartCommand() aufgerufen wird)
-		startService(serviceIntent);
-		
-		// UND binden (für die Kommunikation)
-		bindService(serviceIntent, this, BIND_AUTO_CREATE);
-		// ==================================================
-		
+        initViewPager();
+        permission();
 		handleIntent(getIntent());
     }
 
@@ -107,44 +111,34 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         showLastPlayedSongInFragment();
     }
 
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        if (D) Log.d(TAG, "Esel MainActivity: onServiceConnected");
-        MusicService.MyBinder binder = (MusicService.MyBinder) service;
-        musicService = binder.getService();
-        musicService.setMainActivityCallback(this);
+    protected void onMusicServiceConnected() {
+
         musicFiles = musicService.getMusicFiles();
+
         PlaylistManager.getInstance(this).setMusicFiles(musicFiles);
-        if(songsFragment != null){
-            songsFragment.refreshList();
-        }
+
         initViewPagerAndAlbums();
 
-        // 4. Informiere das bereits existierende SongsFragment, dass es neue Daten gibt.
         if (songsFragment != null) {
+            songsFragment.refreshList();
             songsFragment.setMusicList(musicFiles);
-            Log.d(TAG, "SongsFragment wurde mit " + musicFiles.size() + " Songs aktualisiert.");
+            Log.d(TAG, "SongsFragment wurde mit "
+                    + musicFiles.size() + " Songs aktualisiert.");
         }
-        if (albumFragment != null) { // <-- NEU
+
+        if (albumFragment != null) {
             albumFragment.updateAdapterList(albums);
-            Log.d(TAG, "AlbumFragment wurde mit " + albums.size() + " Alben aktualisiert.");
         }
-        if (artistFragment != null) { // <-- NEU
+
+        if (artistFragment != null) {
             artistFragment.updateAdapterList(artist);
-            Log.d(TAG, "ArtistFragment wurde mit " + artist.size() + " Künstlern aktualisiert.");
-            // ---------------------------------------------
         }
-        // 5. Aktualisiere den Mini-Player mit dem aktuellen Zustand.
+
         if (musicService.isPlaying()) {
             onSongChanged();
         } else {
             showLastPlayedSongInFragment();
         }
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        musicService = null;
     }
 
     @Override
@@ -223,25 +217,49 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
 
     private void permission() {
+
         ArrayList<String> permissionsToRequest = new ArrayList<>();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.READ_MEDIA_AUDIO);
+
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_MEDIA_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(
+                        Manifest.permission.READ_MEDIA_AUDIO);
             }
-            if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
+
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                permissionsToRequest.add(
+                        Manifest.permission.POST_NOTIFICATIONS);
             }
+
         } else {
-            if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                permissionsToRequest.add(
+                        Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         }
 
         if (!permissionsToRequest.isEmpty()) {
-            ActivityCompat.requestPermissions(MainActivity.this, permissionsToRequest.toArray(new String[0]), REQUEST_CODE);
+            ActivityCompat.requestPermissions(
+                    this,
+                    permissionsToRequest.toArray(new String[0]),
+                    REQUEST_CODE);
+
         } else {
-            initViewPagerAndAlbums();
+            // Berechtigung ist bereits vorhanden
+            startMusicService();
         }
     }
 
@@ -262,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             }
 
             if (allPermissionsGranted) {
-                recreate();
+                startMusicService();
             } else {
                 Toast.makeText(this, "Berechtigung verweigert. Die App kann keine Musik laden.", Toast.LENGTH_LONG).show();
                 // Lade die UI trotzdem, sie wird leer sein.
@@ -481,6 +499,35 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
     protected void onDestroy(){
         super.onDestroy();
+    }
+    private void startMusicService(){
+        Intent serviceIntent = new Intent(this, MusicService.class);
+
+        // Letzten Song wiederherstellen
+        SharedPreferences prefs =
+                getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
+
+        String lastMusicFile =
+                prefs.getString(MUSIC_FILE, null);
+
+        if (lastMusicFile != null) {
+            serviceIntent.putExtra("actionName", "RESTORE_LAST_SONG");
+        }
+
+        // Datei wurde von außen geöffnet
+        Intent intent = getIntent();
+
+        if (Intent.ACTION_VIEW.equals(intent.getAction())
+                && intent.getData() != null) {
+
+            Uri audioUri = intent.getData();
+
+            serviceIntent.putExtra("actionName", "PLAY_URI");
+            serviceIntent.putExtra("uri", audioUri.toString());
+        }
+
+        startService(serviceIntent);
+
     }
 }
       

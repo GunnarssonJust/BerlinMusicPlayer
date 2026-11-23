@@ -1,31 +1,31 @@
 <resources>
 
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/darkgreen</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorPrimary">@color/green</item>
+        <item name="colorPrimaryDark">@color/darkestgreen</item>
+        <item name="colorAccent">@color/darkestyellow</item>
     </style>
 
-    <style name="AppTheme.AppWidgetContainerParent" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="AppTheme.AppWidgetContainerParent" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Radius of the outer bound of widgets to make the rounded corners -->
-        <item name="appWidgetRadius">2dp</item>
+        <item name="appWidgetRadius">4dp</item>
         <!--
         Radius of the inner view's bound of widgets to make the rounded corners.
         It needs to be 8dp or less than the value of appWidgetRadius
         -->
         <item name="appWidgetInnerRadius">2dp</item>
-        <item name="fastScrollBubbleColor">@color/colorAccent</item>
+        <item name="fastScrollBubbleColor">@color/green</item>
         <item name="fastScrollBubbleTextColor">@android:color/white</item>
         <item name="fastScrollHandleColor">@color/red</item>
     </style>
 
     <style name="AppTheme.AppWidgetContainer" parent="AppTheme.AppWidgetContainerParent">
         <!-- Apply padding to avoid the content of the widget colliding with the rounded corners -->
-        <item name="appWidgetPadding">2dp</item>
+        <item name="appWidgetPadding">4dp</item>
     </style>
 
     <style name="MainActivityTabLayout" parent="TextAppearance.Design.Tab">
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">10sp</item>
         <item name="android:textAllCaps">true</item>
         <!-- <item name="android:fontFamily">@font/moderne_fraktur</item>
         Für aeltere APIs notwengig:

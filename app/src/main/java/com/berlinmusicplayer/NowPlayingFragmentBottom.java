@@ -13,11 +13,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
-
-import java.util.ArrayList;
 
 public class NowPlayingFragmentBottom extends Fragment {
 
@@ -25,7 +24,7 @@ public class NowPlayingFragmentBottom extends Fragment {
 
     private ImageView albumArt, nextBtn, playPauseBtn;
     private TextView artist, songName;
-    private MainActivity mainActivity;
+    private BaseActivity hostActivity;
 
     // Lokale Variablen, um den Zustand zu halten, auch wenn der Service (noch) nicht läuft
     private String lastPlayedPath;
@@ -38,11 +37,13 @@ public class NowPlayingFragmentBottom extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        if (context instanceof MainActivity) {
-            mainActivity = (MainActivity) context;
+        // ← Nicht mehr nur MainActivity!
+        if (context instanceof BaseActivity) {
+            hostActivity = (BaseActivity) context;
+        } else if (context instanceof MainActivity) {
+            hostActivity = (MainActivity) context;
         } else {
-            throw new RuntimeException(context.toString()
-                    + " muss MainActivity sein");
+            throw new RuntimeException(context.toString() + " muss BaseActivity sein");
         }
     }
 
@@ -72,9 +73,10 @@ public class NowPlayingFragmentBottom extends Fragment {
     }
 
     // Hilfsmethode, um sicher auf den MusicService zuzugreifen
-    private MusicService getMusicService() {
-        if (mainActivity != null) {
-            return mainActivity.musicService;
+
+    MusicService getMusicService() {
+        if (hostActivity != null) {
+            return hostActivity.musicService;
         }
         return null;
     }
@@ -106,16 +108,16 @@ public class NowPlayingFragmentBottom extends Fragment {
         MusicService musicService = getMusicService();
         if (musicService != null && musicService.mediaPlayer != null) {
             // Wenn der Service läuft -> Öffne einfach den Player
-            Intent intent = new Intent(mainActivity, PlayerActivity.class);
+            Intent intent = new Intent(hostActivity, PlayerActivity.class);
             intent.putExtra("sender", "NowPlayingFragment");
-            mainActivity.startActivity(intent);
+            hostActivity.startActivity(intent);
         } else if (lastPlayedPath != null) {
             // Wenn der Service NICHT läuft, aber ein letzter Song bekannt ist -> Starte den Player mit diesem Song
             int position = findPositionByPath(lastPlayedPath);
             if (position != -1) {
-                Intent intent = new Intent(mainActivity, PlayerActivity.class);
+                Intent intent = new Intent(hostActivity, PlayerActivity.class);
                 intent.putExtra("position", position);
-                mainActivity.startActivity(intent);
+                hostActivity.startActivity(intent);
             }
         }
     }
@@ -123,12 +125,12 @@ public class NowPlayingFragmentBottom extends Fragment {
     // --- HILFSMETHODEN, UM DIE LOGIK ABSTURZSICHER ZU MACHEN ---
 
     private void startLastPlayedSong() {
-        if (mainActivity != null && lastPlayedPath != null) {
+        if (hostActivity != null && lastPlayedPath != null) {
             int position = findPositionByPath(lastPlayedPath);
             if (position != -1) {
-                Intent serviceIntent = new Intent(mainActivity, MusicService.class);
+                Intent serviceIntent = new Intent(hostActivity, MusicService.class);
                 serviceIntent.putExtra("servicePosition", position);
-                mainActivity.startService(serviceIntent);
+                hostActivity.startService(serviceIntent);
 
                 // UI sofort aktualisieren für besseres Feedback
                 playPauseBtn.setImageResource(R.mipmap.ic_pause);
@@ -140,6 +142,7 @@ public class NowPlayingFragmentBottom extends Fragment {
     // --- FINALE, KORREKTE UI-UPDATE-METHODE ---
 
     public void updateNowPlayingUI(MusicFiles musicFile, boolean isPlaying) {
+        if(!isAdded() || getContext() == null) return;
         // Sicherheitscheck, falls die Views noch nicht initialisiert sind
         if (songName == null || artist == null || playPauseBtn == null) {
             return;
@@ -158,7 +161,7 @@ public class NowPlayingFragmentBottom extends Fragment {
                 if (artBytes != null) {
                     Glide.with(requireContext()).asBitmap().load(artBytes).into(albumArt);
                 } else {
-                    Glide.with(requireContext()).asBitmap().load(R.drawable.ic_play_btn).into(albumArt);
+                    Glide.with(this).asBitmap().load(R.drawable.ic_play_btn).into(albumArt);
                 }
             }
         }
@@ -179,7 +182,20 @@ public class NowPlayingFragmentBottom extends Fragment {
         return null;
     }
     private int findPositionByPath(String path){
-        if(mainActivity == null) return -1;
-        return mainActivity.findSongPositionByPath(path);
+        if(hostActivity == null) return -1;
+        return hostActivity.findSongPositionByPath(path);
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MusicService s = getMusicService();
+        if (s == null) return;
+        java.util.ArrayList<MusicFiles> list = s.getCurrentPlaylist();
+        int pos = s.getPosition();
+        if (list != null && pos >= 0 && pos < list.size()) {
+            updateNowPlayingUI(list.get(pos), s.isPlaying());
+        }
+    }
+
 }

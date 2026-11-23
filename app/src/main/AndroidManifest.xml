@@ -45,6 +45,12 @@
                 android:resource="@xml/music_widget_provider_small" />
         </receiver>
 
+        <receiver android:name=".MediaButtonReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON"/>
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".MusicService"
             android:enabled="true"
@@ -57,9 +63,6 @@
 
         <activity
             android:name=".AlbumDetails"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ArtistDetails"
             android:screenOrientation="portrait" />
         <activity
             android:name=".ArtistActivity"
@@ -79,15 +82,30 @@
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <action android:name="android.intent.action.DEFAULT"/>
+                <data android:mimeType="audio/*"/>
+            </intent-filter>
+            <intent-filter>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <data android:mimeType="audio/mpeg"/>   <!-- MP3 -->
+            <data android:mimeType="audio/flac"/>   <!-- FLAC -->
+            <data android:mimeType="audio/ogg"/>    <!-- OGG -->
+            <data android:mimeType="audio/wav"/>    <!-- WAV -->
+            <data android:mimeType="audio/aac"/>    <!-- AAC -->
+            <data android:mimeType="audio/x-wav"/>  <!-- WAV alternativ -->
+            </intent-filter>
         </activity>
+
         <activity
             android:name=".PlayerActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="fullSensor"
+            />
     </application>
 
 </manifest>

@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@drawable/im_freiheit_heisst"
      >
 
@@ -14,7 +15,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="12dp"
         android:padding="12dp"
-        android:hint="Songs, Alben, Artists suchen..."
+        android:hint="@string/songs_alben_artists_suchen"
         android:textColor="@color/white"
         android:background="@drawable/search_input_background"
         android:inputType="text"
@@ -29,7 +30,7 @@
         android:id="@+id/search_empty_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Keine Ergebnisse gefunden"
+        android:text="@string/keine_ergebnisse_gefunden"
         android:textColor="@color/white"
         android:textSize="16sp"
         android:visibility="gone"
@@ -44,9 +45,17 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/search_input"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/frag_bottom_player"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:background="#99000000"/>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/frag_bottom_player"
+        android:name="com.berlinmusicplayer.NowPlayingFragmentBottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

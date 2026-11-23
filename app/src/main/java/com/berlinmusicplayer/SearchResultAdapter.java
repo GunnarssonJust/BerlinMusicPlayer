@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,18 +29,13 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
     private Map<String, Integer> songPositionMap = new HashMap<>();
     MusicService musicService;
 
-    public SearchResultAdapter(Context mContext, ArrayList<SearchResultItem> results, ArrayList<MusicFiles> allSongs) {
+    public SearchResultAdapter(Context mContext, ArrayList<SearchResultItem> results) {
         this.mContext = mContext;
         this.results = results;
-        for (int i = 0; i < allSongs.size(); i++) {
-            songPositionMap.put(allSongs.get(i).getId(),i);
         }
-    }
 
     @Override
-    public int getItemViewType(int position) {
-        return results.get(position).type;
-    }
+    public int getItemViewType(int position) {return results.get(position).type;}
 
     @NonNull
     @Override
@@ -82,16 +78,14 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
 
 
                 holder.itemView.setOnClickListener(v -> {
-                    Integer masterPosition = songPositionMap.get(song.getId());
-                    if(masterPosition == null)return;
                     Intent serviceIntent = new Intent(mContext, MusicService.class);
-                    serviceIntent.putExtra("actionName", "PLAY_MASTER_SONG");
-                    serviceIntent.putExtra("position", masterPosition);
+                    serviceIntent.putExtra("actionName", "PLAY_SONG_BY_ID");
+                    serviceIntent.putExtra("songId", song.getId());
                     mContext.startService(serviceIntent);
 
                     Intent playerIntent = new Intent(mContext, PlayerActivity.class);
                     playerIntent.putExtra("sender", "search");
-                    playerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    playerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     mContext.startActivity(playerIntent);
                 });
                 break;

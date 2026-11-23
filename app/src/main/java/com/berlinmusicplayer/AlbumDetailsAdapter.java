@@ -44,20 +44,24 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
 
     @Override
     public void onBindViewHolder(@NonNull MyHolder holder, int position) {
-        holder.album_name.setText(albumFiles.get(position).getTitle());
+        holder.song_name.setText(String.format(albumFiles.get(position).getTitle()));
         trackNumber = view.findViewById(R.id.music_track_number);
         holder.album_image.setVisibility(View.GONE);
         holder.artist_name.setVisibility(View.GONE);
         holder.trackNumber.setVisibility(View.VISIBLE);
         String track = getTrackNumber(albumFiles.get(position).getPath());
         holder.trackNumber.setText(track);
+        holder.songduration.setVisibility(View.VISIBLE);
+        holder.songduration.setText(formatDuration(albumFiles.get(position).getDuration()));
         MusicFiles currentSong = albumFiles.get(position);
         if (isCurrentSong(currentSong)) {
-            holder.album_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
-            holder.artist_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+            holder.song_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+            holder.song_name.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
+            holder.songduration.setTextColor(mContext.getColor(android.R.color.holo_blue_bright));
         } else {
-            holder.album_name.setTextColor(mContext.getColor(android.R.color.white));
+            holder.song_name.setTextColor(mContext.getColor(android.R.color.white));
             holder.artist_name.setTextColor(mContext.getColor(android.R.color.darker_gray));
+            holder.songduration.setTextColor(mContext.getColor(android.R.color.white));
         }
 
 
@@ -86,14 +90,15 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
 
     public class MyHolder extends RecyclerView.ViewHolder{
         ImageView album_image,menuMore;
-        TextView album_name,artist_name,trackNumber;
+        TextView song_name,artist_name,trackNumber, songduration;
         public MyHolder(@NonNull View itemView) {
             super(itemView);
             album_image = itemView.findViewById(R.id.music_img);
             menuMore = itemView.findViewById(R.id.menuMore);
-            album_name = itemView.findViewById(R.id.music_file_name);
+            song_name = itemView.findViewById(R.id.music_file_name);
             artist_name = itemView.findViewById(R.id.artist_file_name);
             trackNumber = itemView.findViewById(R.id.music_track_number);
+            songduration = itemView.findViewById(R.id.song_duration);
         }
     }
 
@@ -129,5 +134,27 @@ public class AlbumDetailsAdapter extends RecyclerView.Adapter<AlbumDetailsAdapte
         SharedPreferences prefs = mContext.getSharedPreferences("LAST_PLAYED", Context.MODE_PRIVATE);
         String currentSongId = prefs.getString("current_song_id", "");
         return currentSongId.equals(song.getId());
+    }
+    private String formatDuration(String durationString) {
+        if (durationString == null || durationString.isEmpty()) {
+            return "";
+        }
+
+        try {
+            long durationMillis = Long.parseLong(durationString);
+            long totalSeconds = durationMillis / 1000;
+
+            long minutes = totalSeconds / 60;
+            long seconds = totalSeconds % 60;
+
+            return String.format(
+                    java.util.Locale.getDefault(),
+                    "%d:%02d",
+                    minutes,
+                    seconds
+            );
+        } catch (NumberFormatException e) {
+            return "";
+        }
     }
 }

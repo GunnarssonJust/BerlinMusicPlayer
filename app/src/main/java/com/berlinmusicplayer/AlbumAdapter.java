@@ -40,6 +40,7 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.MyHolder>{
     @Override
     public void onBindViewHolder(@NonNull MyHolder holder, final int position) {
         holder.album_name.setText(albumFiles.get(position).getAlbum());
+        holder.album_year.setText(albumFiles.get(position).getYear());
 
         Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
         String albumId = albumFiles.get(position).getAlbumId();
@@ -64,11 +65,12 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.MyHolder>{
 
     public class MyHolder extends RecyclerView.ViewHolder{
         ImageView album_image;
-        TextView album_name;
+        TextView album_name,album_year;
         public MyHolder(@NonNull View itemView) {
             super(itemView);
             album_image = itemView.findViewById(R.id.albumitem_image);
             album_name = itemView.findViewById(R.id.album_subtext);
+            album_year = itemView.findViewById(R.id.album_year);
         }
     }
 

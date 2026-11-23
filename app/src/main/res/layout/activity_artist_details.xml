@@ -5,12 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_player"
+    android:fitsSystemWindows="true"
+    android:layout_marginTop="36dp"
     tools:context=".AlbumDetails">
 
     <ImageView
         android:id="@+id/artistPhoto"
         android:layout_width="match_parent"
         android:layout_height="350dp"
+        android:padding="16dp"
         android:src="@drawable/ic_play_btn"
         android:scaleType="centerCrop" />
 
@@ -19,6 +22,4 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/artistPhoto"/>
-
-
 </RelativeLayout>

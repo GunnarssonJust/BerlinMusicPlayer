@@ -1,6 +1,7 @@
 package com.berlinmusicplayer;
 
 import android.app.AlertDialog;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.BufferedReader;
@@ -209,6 +211,22 @@ public class PlaylistFragment extends Fragment {
             PlaylistManager.Playlist playlist = playlistManager.getPlaylists().get(position);
             holder.name.setText(playlist.name);
             holder.count.setText(playlist.songIds.size() + " Songs");
+            MusicFiles coverSong = playlistManager.getLastPlayedOfPlaylist(playlist);
+            holder.icon.setImageResource(R.drawable.ic_play_btn);      // Standard, falls kein Cover da ist
+            if (coverSong != null) {
+                try {
+                    long albumId = Long.parseLong(coverSong.getAlbumId());
+                    Uri artUri = ContentUris.withAppendedId(
+                            Uri.parse("content://media/external/audio/albumart"), albumId);
+                    Glide.with(holder.icon)
+                            .load(artUri)
+                            .placeholder(R.drawable.ic_play_btn)
+                            .error(R.drawable.ic_play_btn)
+                            .into(holder.icon);
+                } catch (NumberFormatException ignored) {
+                    // bleibt beim Standard-Icon
+                }
+            }
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(getContext(), PlaylistDetailActivity.class);
@@ -242,12 +260,14 @@ public class PlaylistFragment extends Fragment {
         class PlaylistHolder extends RecyclerView.ViewHolder {
             TextView name, count;
             ImageView menuMore;
+            ImageView icon;
 
             PlaylistHolder(@NonNull View itemView) {
                 super(itemView);
                 name = itemView.findViewById(R.id.playlist_name);
                 count = itemView.findViewById(R.id.playlist_count);
                 menuMore = itemView.findViewById(R.id.playlist_menu);
+                icon = itemView.findViewById(R.id.playlist_icon);
             }
         }
     }

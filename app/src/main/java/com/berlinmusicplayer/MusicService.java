@@ -1,5 +1,10 @@
 package com.berlinmusicplayer;
 
+import java.io.File;
+
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -11,6 +16,7 @@ import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -27,6 +33,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaMetadataCompat;
@@ -34,10 +41,12 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -49,7 +58,6 @@ import java.util.Random;
 
 import static com.berlinmusicplayer.ApplicatonClass.ACTION_CANCEL;
 import static com.berlinmusicplayer.ApplicatonClass.CHANNEL_ID_2;
-
 
 public class MusicService extends Service implements MediaPlayer.OnCompletionListener, AudioManager
         .OnAudioFocusChangeListener {
@@ -63,12 +71,24 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     public MediaSessionCompat mediaSessionCompat;
     private ArrayList<MusicFiles> musicFiles = new ArrayList<>();
     private ArrayList<MusicFiles> currentPlaylist;
+    private ArrayList<MusicFiles> previousPlaylist;
+    private ArrayList<MusicFiles> activePlaylistList = null;
     ActionPlaying actionPlaying;
     MusicServiceCallback mainActivityCallback;
     private NotificationManager notificationManager;
     private AudioManager audioManager;
     private AudioFocusRequest audioFocusRequest;
     private MiniPlayerCallback miniPlayerCallback;
+    private CountDownTimer sleepTimer;
+    private long sleepTimeRemaining =0;
+    private static final int SLEEP_TIMER_NOTIFICATION_ID =999;
+    private static final String SLEEP_TIMER_CHANNEL_ID = "sleep_timer_channel";
+    private static final String SLEEP_CHANNEL = "sleep_timer_channel";
+    private long getSleepTimeRemaining() {
+        return sleepTimeRemaining;
+    }
+    private int activePlaylistIndex = -1;
+
     Uri uri;
     public int position = -1;
     public final int noteId = 24061971;
@@ -86,8 +106,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     public static final String SONG_NAME = "SONG NAME";
     public static final String ALBUM_ID = "ALBUM NAME";
     public static final String PLAYER_PLAYING = "PLAYER PLAYING";
-
-
+    private float replayGainVolume = 1.0f;
 
     public static boolean repeatBoolean = false;
     public static boolean shuffleBoolean = false;
@@ -134,7 +153,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
         mediaButtonIntent.setClass(this,MediaButtonReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, mediaButtonIntent,PendingIntent.FLAG_IMMUTABLE);
-        mediaSessionCompat = new MediaSessionCompat(getBaseContext(), "PlayerAudio",null,pendingIntent);
+        mediaSessionCompat = new MediaSessionCompat(getBaseContext(), "PlayerAudio",new ComponentName(this,MediaButtonReceiver.class),pendingIntent);
         mediaSessionCompat.setMediaButtonReceiver(pendingIntent);
         mediaSessionCompat.setCallback(new MediaSessionCompat.Callback() {
             @Override
@@ -168,34 +187,30 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         });
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
+        NotificationChannel ch = new NotificationChannel(SLEEP_CHANNEL, "Sleep-Timer", NotificationManager.IMPORTANCE_LOW);
+        ch.setSound(null, null);
+        ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
+
         SharedPreferences preferences = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
-
-        // Position validieren
-        if (position < 0 || position >= currentPlaylist.size()) {
-            position = 0;
-        }
-
         boolean isMasterPlaylist = preferences.getBoolean("isMasterPlaylist", true);
         if(isMasterPlaylist){
             currentPlaylist = musicFiles;
         }else {
-            String jsonPaths = preferences.getString("lastPlaylist", null);
+            String jsonPaths = preferences.getString("albumSongs", null);
             if (jsonPaths != null) {
-                // Rekonstruiere die Album-Playlist aus den gespeicherten Pfaden
                 Type type = new TypeToken<ArrayList<String>>() {}.getType();
                 ArrayList<String> paths = new Gson().fromJson(jsonPaths, type);
-                ArrayList<MusicFiles> reconstructedPlaylist = new ArrayList<>();
-                // Durchsuche die masterMusicFiles, um die vollständigen Objekte zu finden
+                ArrayList<MusicFiles> reconstructed = new ArrayList<>();
                 for (String path : paths) {
-                    for (MusicFiles masterFile : musicFiles) {
-                        if (masterFile.getPath().equals(path)) {
-                            reconstructedPlaylist.add(masterFile);
+                    for (MusicFiles f : musicFiles) {
+                        if (f.getPath().equals(path)) {
+                            reconstructed.add(f);
                             break;
                         }
                     }
                 }
-                currentPlaylist = reconstructedPlaylist;
-            } else {
+                if (!reconstructed.isEmpty()) currentPlaylist = reconstructed;
+            }else {
                 // Fallback
                 currentPlaylist = musicFiles;
             }
@@ -226,45 +241,32 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
     @Override
     public void onAudioFocusChange(int focusState) {
+        Log.d(TAG, "AudioFocus=" + focusState + " playing=" + isPlaying()
+                + " playWhenReady=" + playWhenReady);
         //Invoked when the audio focus of the system is updated.
         switch (focusState) {
             case AudioManager.AUDIOFOCUS_GAIN:
-                if(playWhenReady) {
-                    start();
-                    playWhenReady = false;
-                }
                 if(mediaPlayer != null) {
                     try {
-                        mediaPlayer.setVolume(1.0f, 1.0f);
+                        mediaPlayer.setVolume(replayGainVolume, replayGainVolume);
                     } catch (IllegalStateException ignored) {}
                 }
-                break;
-            case AudioManager.AUDIOFOCUS_LOSS:
-                if(mediaPlayer != null) {
-                    fadeOutAndPause();
+                if(playWhenReady && !isPlaying()){
+                    start();
                 }
                 playWhenReady = false;
                 break;
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                // Lost focus for a short time, but we have to stop
-                // playback. We don't release the media player because playback
-                // is likely to resume
-                if(mediaPlayer != null) {
-                    if(isPlaying()){
-                        pause();
-                        playWhenReady = true;
-                    }
-                    fadeOutAndPause();
-                }else playWhenReady = false;
+            case AudioManager.AUDIOFOCUS_LOSS:
+                playWhenReady =false;
+                fadeOutAndPause();
                 break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                // KURZE PAUSE, wenn Nachricht erscheint, Telefon klingelt,,,,
-                if (isPlaying()) {
+                // KURZE PAUSE, wenn Nachricht erscheint, Blitzerapp warnt
+                if (isPlaying() && mediaPlayer!=null) {
                     try {
-                        mediaPlayer.setVolume(0.2f, 0.2f);
+                        mediaPlayer.setVolume(0.15f, 0.15f);
                     } catch (IllegalStateException ignored) {}
-                }else{
-                    playWhenReady = false;
                 }
                 break;
         }
@@ -308,7 +310,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 case ACTION_PREV:
                     previousBtnClicked();
                     break;
-                    case ACTION_SHUFFLE:
+                case ACTION_SHUFFLE:
                     shuffleBtnClicked();
                     break;
                 case ACTION_REPEAT:
@@ -365,36 +367,59 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
 
         String actionName = intent.getStringExtra("actionName");
         if (actionName != null) {
-            SharedPreferences.Editor editor = getSharedPreferences(MUSIC_LAST_PLAYED,MODE_PRIVATE).edit();
+            SharedPreferences.Editor editor = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE).edit();
             switch (actionName) {
                 case "WIDGET_CLICKED":
-                    // Wenn ein Song geladen ist: PlayerActivity öffnen
                     if (mediaPlayer != null && position != -1) {
-                        showNotification(R.drawable.ic_notif_play);
-
-                        Intent openplayerActivity = new Intent(this, PlayerActivity.class);
-                        openplayerActivity.putExtra("sender", "widget");
-                        openplayerActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                        startActivity(openplayerActivity);
-                    }
-                    // Sonst: PlayerActivity öffnen, Song wird aus SharedPreferences geladen, faLls vorhanden
-                    else {
+                        showNotificationSafe(R.drawable.ic_notif_play);
+                        Intent openPlayerActivity = new Intent(this, PlayerActivity.class);
+                        openPlayerActivity.putExtra("sender", "widget");
+                        openPlayerActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(openPlayerActivity);
+                    } else {
                         SharedPreferences prefs = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
-                        int lastPosition = prefs.getInt("currentPosition", -1);
+                        int lastSongIndex = prefs.getInt("songIndex", -1);
+                        int seekPosition = prefs.getInt("currentPosition", 0);
+                        boolean isMaster = prefs.getBoolean("isMasterPlaylist", true);
 
-                        if (lastPosition != -1 && currentPlaylist != null && lastPosition < currentPlaylist.size()) {
-                            createMediaPlayer(lastPosition, false);  // Laden, aber nicht abspielen
-                            showNotification(R.drawable.ic_notif_pause);
+                        // ← Playlist wiederherstellen!
+                        if (!isMaster) {
+                            String jsonPaths = prefs.getString("albumSongs", null);
+                            if (jsonPaths != null) {
+                                Type type = new TypeToken<ArrayList<String>>() {
+                                }.getType();
+                                ArrayList<String> paths = new Gson().fromJson(jsonPaths, type);
+                                ArrayList<MusicFiles> reconstructed = new ArrayList<>();
+                                for (String path : paths) {
+                                    for (MusicFiles f : musicFiles) {
+                                        if (f.getPath().equals(path)) {
+                                            reconstructed.add(f);
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!reconstructed.isEmpty()) currentPlaylist = reconstructed;
+                            }
+                        } else {
+                            currentPlaylist = musicFiles;
+                        }
+
+                        if (lastSongIndex != -1 && currentPlaylist != null
+                                && lastSongIndex < currentPlaylist.size()) {
+                            createMediaPlayer(lastSongIndex, false);
+                            if (seekPosition > 0 && mediaPlayer != null) {
+                                mediaPlayer.seekTo(seekPosition);
+                            }
+                            showNotificationSafe(R.drawable.ic_notif_pause);
                             sendWidgetUpdate();
 
-                            // PlayerActivity öffnen
-                            Intent openPlayerActivity = new Intent(this, PlayerActivity.class);
-                            openPlayerActivity.putExtra("targetFragment", "SongsFragment");
-                            openPlayerActivity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(openPlayerActivity);
-                        }else{// kein Song in SharedPreferences vorhanden, es wird die Songsliste auf der MainActivity geöffnet
+                            Intent openPlayer = new Intent(this, PlayerActivity.class);
+                            openPlayer.putExtra("sender", "widget");
+                            openPlayer.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            startActivity(openPlayer);
+                        } else {
                             Intent mainIntent = new Intent(this, MainActivity.class);
-                            mainIntent.putExtra("targetFragment","SongsFragment");
+                            mainIntent.putExtra("targetFragment", "SongsFragment");
                             mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                             startActivity(mainIntent);
                         }
@@ -406,14 +431,40 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                         break;
                     }
                     SharedPreferences prefs = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
-                    int lastPosition = prefs.getInt("currentPosition", -1);
+                    int lastSongIndex = prefs.getInt("songIndex", -1);
+                    int seekPosition = prefs.getInt("currentPosition", 0);
+                    boolean isMaster = prefs.getBoolean("isMasterPlaylist", true);
 
-                    if (lastPosition != -1 && currentPlaylist != null && lastPosition < currentPlaylist.size()) {
-                        // MediaPlayer erstellen, aber NICHT abspielen
-                        createMediaPlayer(lastPosition);
-                        // Notification anzeigen (mit Pause-Icon, da nicht abspielend)
-                        showNotification(R.drawable.ic_notif_pause);
+                    // Playlist wiederherstellen
+                    if (!isMaster) {
+                        String jsonPaths = prefs.getString("albumSongs", null);
+                        if (jsonPaths != null) {
+                            Type type = new TypeToken<ArrayList<String>>() {}.getType();
+                            ArrayList<String> paths = new Gson().fromJson(jsonPaths, type);
+                            ArrayList<MusicFiles> reconstructed = new ArrayList<>();
+                            for (String path : paths) {
+                                for (MusicFiles f : musicFiles) {
+                                    if (f.getPath().equals(path)) {
+                                        reconstructed.add(f);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!reconstructed.isEmpty()) currentPlaylist = reconstructed;
+                        }
+                    } else {
+                        currentPlaylist = musicFiles;
+                    }
+
+                    if (lastSongIndex != -1 && currentPlaylist != null
+                            && lastSongIndex < currentPlaylist.size()) {
+                        createMediaPlayer(lastSongIndex, false);
+                        if (seekPosition > 0 && mediaPlayer != null) {
+                            mediaPlayer.seekTo(seekPosition);
+                        }
+                        showNotificationSafe(R.drawable.ic_notif_pause);
                         sendWidgetUpdate();
+                        // ← Keine Activity öffnen!
                     }
                     break;
                 case "PLAY_MASTER_SONG":
@@ -422,6 +473,24 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                         playNewPlayList(this.musicFiles,masterPosition);
                     }
                     break;
+                case "PLAY_SONG_BY_ID":{
+                    String wantedId = intent.getStringExtra("songId");
+                    int foundIndex = -1;
+                    if(wantedId!= null && musicFiles != null) {
+                        for (int i = 0; i < musicFiles.size(); i++) {
+                            if (wantedId.equals(musicFiles.get(i).getId())) {
+                                foundIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    Log.d(TAG,"PLAY_SONG_BY_ID id= "+ wantedId + ", foundIndex=" + foundIndex
+                    +"masterSize= " + (musicFiles != null ? musicFiles.size() : -1));
+                    if(foundIndex != -1){
+                        playNewPlayList(musicFiles, foundIndex);
+                    }
+                    break;
+                }
                 case "PLAY_ALBUM_SONG":
                     ArrayList<MusicFiles> albumSongs = intent.getParcelableArrayListExtra("albumSongs");
                     int songPosition = intent.getIntExtra("position", -1);
@@ -437,7 +506,29 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                             ", position=" + artistPosition);
                     if (artistSongs != null && artistPosition != -1){
                         currentPlaylist = artistSongs;
+                        activePlaylistList = artistSongs;
+                        activePlaylistIndex = intent.getIntExtra("playlistIndex",-1);
                         playNewPlayList(artistSongs, artistPosition);
+                        Log.d("PlaylistCover", "Service: activePlaylistIndex=" + activePlaylistIndex);
+                    }
+                    break;
+                case "PLAY_URI":
+                    String uriString = intent.getStringExtra("uri");
+                    if (uriString != null) {
+                        Uri uri = Uri.parse(uriString);
+                        MusicFiles song = findSongByUri(uri);
+                        if (song != null) {
+                            currentPlaylist = new ArrayList<>();
+                            currentPlaylist.add(song);
+                            position = 0;
+                            createMediaPlayer(position);
+                            if (actionPlaying != null)
+                                actionPlaying.updatePlayerView();
+
+                            showNotificationSafe(R.drawable.ic_notif_play);
+                            sendWidgetUpdate();
+                            sendBroadcast(new Intent("SONG_CHANGED"));
+                        }
                     }
                     break;
                 case "previous":
@@ -466,7 +557,6 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                     sendWidgetUpdate();
                     resetPlayer();
 
-                    
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         if (audioManager != null) {
                             audioManager.abandonAudioFocusRequest(audioFocusRequest);
@@ -504,25 +594,46 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         return START_STICKY;
     }
 
-    private void updateMediaSessionState(){
-        if(mediaSessionCompat == null || currentPlaylist == null || position < 0 || position >= currentPlaylist.size()){
+    private void updateMediaSessionState() {
+        if (mediaSessionCompat == null || currentPlaylist == null
+                || position < 0 || position >= currentPlaylist.size()) {
             return;
         }
         //Import der Metadaten des laufenden Songs
         MusicFiles currentSong = currentPlaylist.get(position);
-        byte[] albumart = getAlbumArt(currentSong.getPath());
-        Bitmap art;
-        if(albumart != null){
-            art = BitmapFactory.decodeByteArray(albumart, 0, albumart.length);
-        }else {
-            art = BitmapFactory.decodeResource(getResources(), R.drawable.ic_notif_pause);
-        }
+
         MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, currentSong.getTitle())
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentSong.getArtist())
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, currentSong.getAlbum())
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE,currentSong.getTitle())
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, currentSong.getArtist())
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, currentSong.getAlbum())
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
 
+        try{
+            Uri artUri = ContentUris.withAppendedId(
+                    Uri.parse("content://media/external/audio/albumart"),
+                    Long.parseLong(currentSong.getAlbumId()));
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI,artUri.toString());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, artUri.toString());
+        }catch(NumberFormatException ignored){
+            Log.e(TAG, "Album-ID konnte nicht als Long gespeichert werden: " + currentSong.getAlbumId());
+        }
+
+        byte[] albumart = getAlbumArt(currentSong.getPath());
+
+        if(albumart != null){
+            Bitmap full = BitmapFactory.decodeByteArray(albumart, 0, albumart.length);
+            if (full != null) {
+                int max = 512, w = full.getWidth(), h = full.getHeight();
+                float f = Math.min(1f,(float) max/ Math.max(w,h));
+                Bitmap small = f < 1f
+                        ? Bitmap.createScaledBitmap(full,Math.round(w*f),Math.round(h*f),true)
+                        : full;
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,small);
+            }
+        }
         mediaSessionCompat.setMetadata(metadataBuilder.build());
         PlaybackStateCompat.Builder playbackStateBuilder = new PlaybackStateCompat.Builder()
                 .setActions(
@@ -534,9 +645,9 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                                 | PlaybackStateCompat.ACTION_STOP
                                 | PlaybackStateCompat.ACTION_SEEK_TO
                 );
-        if(isPlaying()){
+        if (isPlaying()) {
             playbackStateBuilder.setState(PlaybackStateCompat.STATE_PLAYING, getCurrentPosition(), 1.0f);
-        }else{
+        } else {
             playbackStateBuilder.setState(PlaybackStateCompat.STATE_PAUSED, getCurrentPosition(), 0f);
         }
         mediaSessionCompat.setPlaybackState(playbackStateBuilder.build());
@@ -579,12 +690,26 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             return;
         }
         this.position = position;
+        boolean isMasterPlaylist = (currentPlaylist == musicFiles);
         uri = Uri.parse(currentPlaylist.get(position).getPath());
+
         SharedPreferences.Editor editor = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE).edit();
         editor.putInt("songIndex", position);
+        editor.putBoolean("isMasterPlaylist", isMasterPlaylist);
         editor.putString(MUSIC_FILE, uri.toString());
         editor.putString(ARTIST_NAME, currentPlaylist.get(position).getArtist());
         editor.putString(SONG_NAME, currentPlaylist.get(position).getTitle());
+        if(!isMasterPlaylist){
+            ArrayList<String> paths = new ArrayList<>();
+            for (MusicFiles file : currentPlaylist) {
+                paths.add(file.getPath());
+            }
+            String jsonPaths = new Gson().toJson(paths);
+            editor.putString("albumSongs", jsonPaths);
+        }
+
+
+
         try {
             long albumId = Long.parseLong(currentPlaylist.get(position).getAlbumId());
             editor.putLong(ALBUM_ID, albumId);
@@ -597,11 +722,14 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         resetPlayer();
 
         try {
-            Uri uri = Uri.parse(currentPlaylist.get(position).getPath());
-            mediaPlayer = MediaPlayer.create(getApplicationContext(), uri);
+            Uri songUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    Long.parseLong(currentPlaylist.get(position).getId()));
+            mediaPlayer = MediaPlayer.create(getApplicationContext(), songUri);
             if(mediaPlayer != null) {
                 int audioSessionId = mediaPlayer.getAudioSessionId();
                 EqualizerManager.getInstance().initEqualizer(audioSessionId);
+
+                applyReplayGain(currentPlaylist.get(position).getPath());
 
                 mediaPlayer.setOnCompletionListener(this);
                 saveCurrentSongToPrefs();
@@ -610,12 +738,84 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 if (autoPlay) {
                     start();
                 }else{
-                    showNotification(R.drawable.ic_notif_pause);
+                    showNotificationSafe(R.drawable.ic_notif_pause);
                 }
             }
         } catch(Exception e) {
             Log.e(TAG, "Esel PlayerActivity: playMedia: MediaPlayer konnte nicht erstellt werden", e);
             mediaPlayer = null;
+        }
+    }
+
+    private void applyReplayGain(String path) {
+        replayGainVolume = 1.0f;
+
+        try {
+            File file = new File(path);
+
+            AudioFile audioFile = AudioFileIO.read(file);
+            Tag tag = audioFile.getTag();
+
+            if (tag == null) {
+                Log.d(TAG, "ReplayGain: Keine Tags gefunden");
+                mediaPlayer.setVolume(1.0f, 1.0f);
+                return;
+            }
+
+            String gainString = tag.getFirst("REPLAYGAIN_TRACK_GAIN");
+
+            if (gainString == null || gainString.trim().isEmpty()) {
+                gainString = tag.getFirst("replaygain_track_gain");
+            }
+
+            if (gainString == null || gainString.trim().isEmpty()) {
+                gainString = tag.getFirst("REPLAYGAIN_ALBUM_GAIN");
+            }
+
+            // ← NEU: case-insensitiver Fallback für Album Gain
+            if (gainString == null || gainString.trim().isEmpty()) {
+                gainString = tag.getFirst("replaygain_album_gain");
+            }
+
+            if (gainString != null && !gainString.trim().isEmpty()) {
+
+                gainString = gainString
+                        .replace("dB", "")
+                        .replace("DB", "")
+                        .trim();
+
+                float gainDb = Float.parseFloat(gainString);
+
+                replayGainVolume = (float) Math.pow(10.0, gainDb / 20.0);
+
+                // Keine Verstärkung über 100 %
+                replayGainVolume = Math.min(replayGainVolume, 1.0f);
+
+                mediaPlayer.setVolume(
+                        replayGainVolume,
+                        replayGainVolume
+                );
+
+                Log.d(TAG,
+                        "ReplayGain: " + gainDb +
+                                " dB -> volume " + replayGainVolume);
+
+            } else {
+                mediaPlayer.setVolume(1.0f, 1.0f);
+
+                Log.d(TAG, "ReplayGain: Kein Gain-Tag gefunden");
+            }
+
+        } catch (Exception e) {
+            replayGainVolume = 1.0f;
+
+            if (mediaPlayer != null) {
+                mediaPlayer.setVolume(1.0f, 1.0f);
+            }
+
+            Log.e(TAG,
+                    "ReplayGain Fehler: " + e.getMessage(),
+                    e);
         }
     }
 
@@ -646,12 +846,18 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
 
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            playWhenReady = false;
             // Starte den Player
             try {
                 mediaPlayer.start();
                 if(currentPlaylist!= null && position >= 0 && position < currentPlaylist.size()){
                     String songId = currentPlaylist.get(position).getId();
                     PlaylistManager.getInstance(getApplicationContext()).addToRecent(songId);
+                }
+                if(activePlaylistIndex >= 0 && currentPlaylist == activePlaylistList){
+                    Log.d("PlaylistCover", "speichere lastPlayed für Playlist " + activePlaylistIndex);
+                    PlaylistManager.getInstance(getApplicationContext())
+                            .setLastPlayedInPlaylist(activePlaylistIndex,currentPlaylist.get(position).getId());
                 }
             } catch (IllegalStateException e) {
                 Log.e(TAG, "Error starting mediaPlayer", e);
@@ -684,18 +890,12 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 editor.putString("albumSongs", jsonPaths);
             }
             editor.apply();
-            if(mainActivityCallback != null){
-                mainActivityCallback.onPlaybackStateChanged();
-            }
-            if(actionPlaying != null){
-                actionPlaying.updatePlayerView();
-            }
             Intent updateIntent = new Intent("SONG_CHANGED");
             updateIntent.putExtra("songId", currentPlaylist.get(position).getId());
             sendBroadcast(updateIntent);
 
             // 2. Informiere die externen UIs (Notification & Widget)
-            showNotification(R.drawable.ic_notif_play); // Musik spielt -> zeige PAUSE-Icon
+            showNotificationSafe(R.drawable.ic_notif_play); // Musik spielt -> zeige PAUSE-Icon
             sendWidgetUpdate();
 
             // 3. Informiere das Android-System
@@ -712,41 +912,88 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
                 mainActivityCallback.onPlaybackStateChanged();
             }
             // -----------------------------------------------------------------
-        } else {
-            Log.e(TAG, "start: AudioFocusRequest fehlgeschlagen.");
         }
-    }
+        else if (result == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+            playWhenReady = true;
+            Log.e(TAG, "start: AudioFocusRequest verzögert.");
+        }
+        else {
+                Log.e(TAG, "start: AudioFocusRequest fehlgeschlagen. result = " +result);
+            }
+        }
 
 
-    void pause() {
-        if (mediaPlayer == null || !isPlaying()) {
+    public void pause() {
+        // Keine automatische Wiederaufnahme vormerken
+        playWhenReady = false;
+
+        if (mediaPlayer == null) {
+            Log.d(TAG, "pause(): MediaPlayer ist null.");
             return;
         }
-        Log.d(TAG, "Pause-Befehl empfangen. Player wird pausiert, UI wird aktualisiert.");
 
         try {
+            // Prüfen, ob der Player tatsächlich läuft
+            if (!mediaPlayer.isPlaying()) {
+                Log.d(TAG, "pause(): Wiedergabe läuft bereits nicht.");
+
+                // Wiedergabestatus trotzdem synchronisieren
+                getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(PLAYER_PLAYING, false)
+                        .apply();
+
+                return;
+            }
+
+            // Zuerst pausieren
+            mediaPlayer.pause();
+
+            // Aktuelle Wiedergabeposition speichern
             int currentPos = mediaPlayer.getCurrentPosition();
-            SharedPreferences.Editor editor = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE).edit();
+
+            SharedPreferences.Editor editor =
+                    getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE).edit();
+
             editor.putInt("currentPosition", currentPos);
             editor.putBoolean(PLAYER_PLAYING, false);
             editor.apply();
-        } catch (IllegalStateException ignored) {}
 
-        showNotification(R.drawable.ic_notif_pause);
-        sendWidgetUpdate();
+            Log.d(TAG, "Wiedergabe pausiert bei: " + currentPos + " ms");
 
-        if (actionPlaying != null) {
-            actionPlaying.updatePlayPauseButton();
-        }
-        if(mainActivityCallback != null){
-            mainActivityCallback.onPlaybackStateChanged();
-        }
-        try {
-            mediaPlayer.pause();
+            // AudioFocus freigeben
+            if (audioManager != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (audioFocusRequest != null) {
+                        audioManager.abandonAudioFocusRequest(audioFocusRequest);
+                    }
+                } else {
+                    audioManager.abandonAudioFocus(this);
+                }
+            }
+
+            // MediaSession aktualisieren
+            updateMediaSessionState();
+
+            // Notification aktualisieren
+            showNotificationSafe(R.drawable.ic_notif_pause);
+
+            // Widget aktualisieren
+            sendWidgetUpdate();
+
+            // PlayerActivity aktualisieren
+            if (actionPlaying != null) {
+                actionPlaying.updatePlayPauseButton();
+            }
+
+            // MainActivity / MiniPlayer aktualisieren
+            if (mainActivityCallback != null) {
+                mainActivityCallback.onPlaybackStateChanged();
+            }
+
         } catch (IllegalStateException e) {
-            Log.e(TAG, "Error pausing mediaPlayer", e);
+            Log.e(TAG, "Fehler beim Pausieren des MediaPlayers", e);
         }
-        updateMediaSessionState();
     }
 
     public boolean isPlaying() {
@@ -770,6 +1017,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     }
 
     void release() {
+        playWhenReady = false;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (audioFocusRequest != null) {
                 audioManager.abandonAudioFocusRequest(audioFocusRequest);
@@ -822,66 +1070,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         this.nextBtnClicked();
     }
 
-    public void showNotification(int playPauseBtn) {
-        if (D) Log.d(TAG, "Esel PlayerActivity: showNotification");
-        if (position < 0 || currentPlaylist == null || position >= currentPlaylist.size()) {
-            Log.e(TAG, "showNotification: Ungültige Position, kann keine Benachrichtigung erstellen.");
-            return;
-        }
 
-        final int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
-        Intent contentIntent = new Intent(getApplicationContext(), PlayerActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 5,
-                contentIntent, flags);
-
-        Intent prevIntent = new Intent(this, MusicService.class).setAction(ACTION_PREV);
-        PendingIntent prevPendingIntent = PendingIntent.getService(this, 1,
-                prevIntent, flags);
-
-        Intent playIntent = new Intent(this, MusicService.class).setAction(ACTION_PLAY_PAUSE);
-        PendingIntent playPendingIntent = PendingIntent.getService(this, 2,
-                playIntent, flags);
-
-        Intent nextIntent = new Intent(this, MusicService.class).setAction(ACTION_NEXT);
-        PendingIntent nextPendingIntent = PendingIntent.getService(this, 3,
-                nextIntent, flags);
-
-
-        Intent deleteIntent = new Intent(this, MusicService.class).setAction(ACTION_CANCEL);
-        PendingIntent deletePendingIntent = PendingIntent.getService(this, 4,
-                deleteIntent, flags);
-
-        byte[] picture;
-        picture = getAlbumArt(currentPlaylist.get(position).getPath());
-        Bitmap thumb;
-        if (picture != null && picture.length >0) {
-            thumb = BitmapFactory.decodeByteArray(picture, 0, picture.length);
-        } else {
-            thumb = BitmapFactory.decodeResource(getResources(), R.drawable.ic_notif_pause);
-        }
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID_2)
-                .setContentIntent(pendingIntent)
-                .setSmallIcon(playPauseBtn)
-                .setLargeIcon(thumb)
-                .setContentTitle(currentPlaylist.get(position).getTitle())
-                .setContentText(currentPlaylist.get(position).getArtist())
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOnlyAlertOnce(true)
-                .addAction(R.drawable.ic_notif_backward,"Prev",prevPendingIntent)
-                .addAction(playPauseBtn,"Play",playPendingIntent)
-                .addAction(R.drawable.ic_notif_forward,"Next",nextPendingIntent)
-                .addAction(R.drawable.ic_notif_remove,"Close",deletePendingIntent)
-                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        .setMediaSession(mediaSessionCompat.getSessionToken())
-                        .setShowActionsInCompactView(0,1,2));
-
-        Notification notification = builder.build();
-        if (ActivityCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        startForeground(noteId,notification);
-    }
 
     private byte[] getAlbumArt(String uri) {
         if (D) Log.d(TAG, "Esel PlayerActivity: getAlbumArt");
@@ -904,9 +1093,13 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         if(mediaPlayer == null) {
             // Falls kein Player da ist (z.B. nach Restore), lade den letzten Song
             SharedPreferences prefs = getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE);
-            int lastPosition = prefs.getInt("currentPosition", -1);
+            int lastPosition = prefs.getInt("songIndex", -1);
+            int seekPosition = prefs.getInt("currentPosition", 0);
             if (lastPosition != -1) {
-                createMediaPlayer(lastPosition);
+                createMediaPlayer(lastPosition,true);
+                if (seekPosition > 0 && mediaPlayer != null) {
+                    mediaPlayer.seekTo(seekPosition);
+                }
             }
             return;
         }
@@ -936,7 +1129,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
 
         createMediaPlayer(position);
-        
+
         // Informiere die Activity, dass sie ihre UI aktualisieren muss
         if (actionPlaying != null) {
             actionPlaying.prevBtnClicked(); // Veranlasst die PlayerActivity, ihre UI zu aktualisieren.
@@ -984,6 +1177,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     public void onDestroy() {
         cancelNotification();
         stopForeground(true);
+        stopSleepTimer();
         try {
             unregisterReceiver(becomingnoisyReceiver);
         } catch (Exception ignored) {}
@@ -997,7 +1191,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     }
 
     private void createNotificationChannel() {
-        int importance = NotificationManager.IMPORTANCE_LOW;
+        int importance = NotificationManager.IMPORTANCE_HIGH;
         CharSequence name = "Berlin Music Player";
         String description = "Berlin Music Player";
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID_2, name, importance);
@@ -1016,7 +1210,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
             editor.apply();
         } catch (IllegalStateException ignored) {}
     }
-    
+
     void resume() {
         Log.d(TAG, "Esel PlayerActivity: resume");
         if (mediaPlayer == null) return;
@@ -1057,8 +1251,88 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         Log.d(TAG, "Esel MusicService: MusicService hat jetzt eine Songliste mit " + songListFromMainActivity.size() + " Songs");
     }
 
+    public void showNotification(int playPauseBtn) {
+        if (D) Log.d(TAG, "MusicService: showNotification");
+        if (position < 0 || currentPlaylist == null || position >= currentPlaylist.size()) {
+            Log.e(TAG, "showNotification: Ungültige Position, kann keine Benachrichtigung erstellen.");
+            return;
+        }
+
+        final int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        Intent contentIntent = new Intent(getApplicationContext(), PlayerActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 5,
+                contentIntent, flags);
+
+        PendingIntent prevPendingIntent = PendingIntent.getService(this, 1,
+                new Intent(this, MusicService.class).setAction(ACTION_PREV), flags);
+        PendingIntent playPendingIntent = PendingIntent.getService(this, 2,
+                new Intent(this, MusicService.class).setAction(ACTION_PLAY_PAUSE), flags);
+        PendingIntent nextPendingIntent = PendingIntent.getService(this, 3,
+                new Intent(this, MusicService.class).setAction(ACTION_NEXT), flags);
+        PendingIntent deletePendingIntent = PendingIntent.getService(this, 4,
+                new Intent(this, MusicService.class).setAction(ACTION_CANCEL), flags);
+
+        byte[] picture;
+        picture = getAlbumArt(currentPlaylist.get(position).getPath());
+        Bitmap thumb = (picture != null && picture.length > 0)
+                ? BitmapFactory.decodeByteArray(picture, 0, picture.length)
+                : BitmapFactory.decodeResource(getResources(), R.mipmap.ic_pause);
+
+        // Custom RemoteViews
+        RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification);
+        RemoteViews remoteViews_mini = new RemoteViews(getPackageName(), R.layout.notification_mini);
+        // Daten setzen
+        remoteViews.setImageViewBitmap(R.id.image_view_album, thumb);
+        remoteViews.setTextViewText(R.id.text_view_name, currentPlaylist.get(position).getTitle());
+        remoteViews.setTextViewText(R.id.text_view_artist, currentPlaylist.get(position).getArtist());
+
+        // Play/Pause Icon
+        remoteViews.setImageViewResource(R.id.button_play,
+                playPauseBtn == R.drawable.ic_notif_play ? R.drawable.ic_notif_play : R.drawable.ic_notif_pause);
+
+        // Click Listener
+        remoteViews.setOnClickPendingIntent(R.id.button_play, playPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_prev, prevPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_next, nextPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_close, deletePendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.layout_root, pendingIntent);
+
+        // Daten setzen für kleine Notification
+        remoteViews_mini.setImageViewBitmap(R.id.image_view_album, thumb);
+        remoteViews_mini.setTextViewText(R.id.text_view_name, currentPlaylist.get(position).getTitle());
+        remoteViews_mini.setTextViewText(R.id.text_view_artist, currentPlaylist.get(position).getArtist());
+
+        // Play/Pause Icon in kleiner Notification
+        remoteViews_mini.setImageViewResource(R.id.button_play,
+                playPauseBtn == R.drawable.ic_notif_play ? R.drawable.ic_notif_play : R.drawable.ic_notif_pause);
+
+        // Click Listener auf der kleinen Notification
+        remoteViews_mini.setOnClickPendingIntent(R.id.button_play, playPendingIntent);
+        remoteViews_mini.setOnClickPendingIntent(R.id.button_prev, prevPendingIntent);
+        remoteViews_mini.setOnClickPendingIntent(R.id.button_next, nextPendingIntent);
+        remoteViews_mini.setOnClickPendingIntent(R.id.button_close, deletePendingIntent);
+        remoteViews_mini.setOnClickPendingIntent(R.id.layout_root, pendingIntent);
 
 
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID_2)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setSmallIcon(playPauseBtn)
+                .setCustomContentView(remoteViews_mini)
+                .setCustomBigContentView(remoteViews)
+                .setColor(ContextCompat.getColor(this, R.color.lightgreen))
+                .setColorized(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOnlyAlertOnce(true)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .setDeleteIntent(deletePendingIntent);
+
+        if (ActivityCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
+                != PackageManager.PERMISSION_GRANTED) return;
+
+        startForeground(noteId, builder.build());
+    }
     public ArrayList<MusicFiles> getAllAudio() {
         SharedPreferences preferences = getSharedPreferences(MainActivity.MY_SORT_PREF, MODE_PRIVATE);
         String sortOrder = preferences.getString("sorting", "sortByName");
@@ -1175,7 +1449,7 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
         }
 
         // ValueAnimator, der von 1.0f (volle Lautstärke) auf 0.0f (stumm) animiert
-        final ValueAnimator volumeAnimator = ValueAnimator.ofFloat(1.0f, 0.0f);
+        final ValueAnimator volumeAnimator = ValueAnimator.ofFloat(replayGainVolume, 0.0f);
         volumeAnimator.setDuration(2000); // Dauer des Ausblendens in Millisekunden (z.B. 800ms)
 
         volumeAnimator.addUpdateListener(animation -> {
@@ -1246,6 +1520,8 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     }
 
     public interface MiniPlayerCallback{
+        void onPlaybackStateChanged();
+
         void onSongChanged();
     }
 
@@ -1320,5 +1596,170 @@ public class MusicService extends Service implements MediaPlayer.OnCompletionLis
     public EqualizerManager getEqualizer(){
         return EqualizerManager.getInstance();
     }
+    private MusicFiles findSongByUri(Uri uri) {
+        String path = uri.getPath();
+        if (path == null) return null;
+
+        for (MusicFiles song : musicFiles) {
+            if (path.equals(song.getPath())) {
+                return song;
+            }
+        }
+        return null;
+    }
+
+    private void showNotificationSafe(int icon){
+        try{showNotification(icon);
+        }catch(Exception e){Log.e(TAG,"showNotification() fehlgeschlagen",e);
+        }
+    }
+
+    public void shufflePlaylist(ArrayList<MusicFiles> list) {
+        if (list == null || list.isEmpty()) return;
+        shuffleBoolean = true;
+        repeatBoolean = false;
+        getSharedPreferences(MUSIC_LAST_PLAYED, MODE_PRIVATE).edit()
+                .putBoolean("shuffle", true)
+                .putBoolean("repeat", false)
+                .apply();
+
+        currentPlaylist = new ArrayList<>(list);
+        position = new Random().nextInt(currentPlaylist.size());
+        createMediaPlayer(position);
+        if (actionPlaying != null) {
+            actionPlaying.updatePlayerView();
+            actionPlaying.updateShuffleRepeatButtons();
+        }
+        if(mainActivityCallback != null){
+            mainActivityCallback.onSongChanged();
+        }
+        sendWidgetUpdate();
+    }
+
+    public void startSleepTimer(long ms) {
+        stopSleepTimer();
+        sleepTimeRemaining = ms;
+        sleepTimer = new CountDownTimer(ms, 1000) {
+            @Override public void onTick(long left) {
+                sleepTimeRemaining = left;
+                long s = left / 1000, m = s / 60, h = m / 60;
+                String t = h > 0 ? String.format("%d:%02d:%02d", h, m % 60, s % 60)
+                        : String.format("%d:%02d", m, s % 60);
+                notifySleep(R.mipmap.ic_pause, "Verbleibend: " + t, true);
+            }
+            @Override public void onFinish() {
+                sleepTimeRemaining = 0;
+                pause();
+                sendWidgetUpdate();
+                if (actionPlaying != null) actionPlaying.updatePlayPauseButton();
+                notifySleep(R.mipmap.ic_play_pressed, "Zeit abgelaufen - Musik gestoppt", false);
+            }
+        }.start();
+    }
+
+    public void stopSleepTimer() {
+        if (sleepTimer != null) { sleepTimer.cancel(); sleepTimer = null; }
+        sleepTimeRemaining = 0;
+        ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(SLEEP_TIMER_NOTIFICATION_ID);
+    }
+
+    private void notifySleep(int icon, String text, boolean ongoing) {
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        Notification n = new NotificationCompat.Builder(this, SLEEP_CHANNEL)
+                .setSmallIcon(icon).setContentTitle("Sleep Timer").setContentText(text)
+                .setOngoing(ongoing).setPriority(NotificationCompat.PRIORITY_LOW).build();
+        nm.notify(SLEEP_TIMER_NOTIFICATION_ID, n);
+    }
 
 }
+/* NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID_2)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(playPauseBtn)
+                .setLargeIcon(thumb)
+                .setContentTitle(currentPlaylist.get(position).getTitle())
+                .setContentText(currentPlaylist.get(position).getArtist())
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOnlyAlertOnce(true)
+                .addAction(R.drawable.ic_notif_backward,"Prev",prevPendingIntent)
+                .addAction(playPauseBtn,"Play",playPendingIntent)
+                .addAction(R.drawable.ic_notif_forward,"Next",nextPendingIntent)
+                .addAction(R.drawable.ic_notif_remove,"Close",deletePendingIntent)
+                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setMediaSession(mediaSessionCompat.getSessionToken())
+                        .setShowActionsInCompactView(0,1,2));
+
+        Notification notification = builder.build();
+        if (ActivityCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        startForeground(noteId,notification);*/
+
+/* public void showNotificationSafe(int playPauseBtn) {
+        if (D) Log.d(TAG, "MusicService: showNotification");
+        if (position < 0 || currentPlaylist == null || position >= currentPlaylist.size()) {
+            Log.e(TAG, "showNotification: Ungültige Position, kann keine Benachrichtigung erstellen.");
+            return;
+        }
+
+        final int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        Intent contentIntent = new Intent(getApplicationContext(), PlayerActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 5,
+                contentIntent, flags);
+
+        PendingIntent prevPendingIntent = PendingIntent.getService(this, 1,
+                new Intent(this, MusicService.class).setAction(ACTION_PREV), flags);
+        PendingIntent playPendingIntent = PendingIntent.getService(this, 2,
+                new Intent(this, MusicService.class).setAction(ACTION_PLAY_PAUSE), flags);
+        PendingIntent nextPendingIntent = PendingIntent.getService(this, 3,
+                new Intent(this, MusicService.class).setAction(ACTION_NEXT), flags);
+        PendingIntent deletePendingIntent = PendingIntent.getService(this, 4,
+                new Intent(this, MusicService.class).setAction(ACTION_CANCEL), flags);
+
+        byte[] picture;
+        picture = getAlbumArt(currentPlaylist.get(position).getPath());
+        Bitmap thumb = (picture != null && picture.length > 0)
+                ? BitmapFactory.decodeByteArray(picture, 0, picture.length)
+                : BitmapFactory.decodeResource(getResources(), R.drawable.ic_notif_pause);
+
+        // Custom RemoteViews
+        RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.remote_view_music_player);
+
+        // Daten setzen
+        remoteViews.setImageViewBitmap(R.id.image_view_album, thumb);
+        remoteViews.setTextViewText(R.id.text_view_name, currentPlaylist.get(position).getTitle());
+        remoteViews.setTextViewText(R.id.text_view_artist, currentPlaylist.get(position).getArtist());
+
+        // Play/Pause Icon
+        remoteViews.setImageViewResource(R.id.image_view_play_toggle,
+                playPauseBtn == R.drawable.ic_notif_play ? R.drawable.ic_notif_play : R.drawable.ic_notif_pause);
+
+        // Click Listener
+        remoteViews.setOnClickPendingIntent(R.id.button_play_toggle, playPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_play_last, prevPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_play_next, nextPendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.button_close, deletePendingIntent);
+        remoteViews.setOnClickPendingIntent(R.id.layout_root, pendingIntent);
+
+        // Notification bauen
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID_2)
+                .setSmallIcon(R.drawable.ic_notif_play)
+                .setCustomBigContentView(remoteViews)  // ← Groß (ausgeklappt)
+                .setCustomContentView(remoteViews)  // ← Klein (eingeklappt)
+
+                // .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOnlyAlertOnce(true)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .setContentIntent(pendingIntent)
+                .setDeleteIntent(deletePendingIntent);
+
+
+        if (ActivityCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
+                != PackageManager.PERMISSION_GRANTED) return;
+
+        startForeground(noteId, builder.build());
+
+
+
+    }
+    */

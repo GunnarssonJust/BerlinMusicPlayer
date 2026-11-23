@@ -49,6 +49,13 @@
     <string name="equalizer">Equalizer</string>
     <string name="sleep_timer">Schlaf-Modus</string>
     <string name="import_playlists">import_playlists_from_phone</string>
+    <string name="unbekanner_artist">Unbekannter Interpret</string>
+    <string name="songs_alben_artists_suchen">Songs, Alben, Artists suchen...</string>
+    <string name="keine_ergebnisse_gefunden">Keine Ergebnisse gefunden</string>
+    <string name="duration">Dauer</string>
+    <string name="teufelsberg">Teufelsberg</string>
+    <string name="schlummermodus">Schlummermodus</string>
+    <string name="zufallswiedergabe">Zufallswiedergabe</string>
 
 
 </resources>

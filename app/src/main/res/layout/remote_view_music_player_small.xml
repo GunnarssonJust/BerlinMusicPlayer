@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_root"
+    android:layout_width="match_parent"
+    android:layout_height="80dp"
+    android:background="@drawable/miniplayer_background"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <!-- Albumcover -->
+
+    <ImageView
+        android:id="@+id/image_view_album"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_play_btn" />
+
+    <!-- Berliner Skyline -->
+
+    <ImageView
+        android:id="@+id/image_skyline"
+        android:layout_width="140dp"
+        android:layout_height="12dp"
+        android:layout_toEndOf="@id/image_view_album"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="6dp"
+        android:src="@drawable/ic_adler"
+        android:scaleType="fitStart" />
+
+    <!-- Buttons -->
+
+    <LinearLayout
+        android:id="@+id/layout_play_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/button_play_last"
+            android:layout_width="48dp"
+            android:layout_height="48dp">
+
+            <ImageView
+                android:id="@+id/image_view_play_last"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_notif_backward" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/button_play_toggle"
+            android:layout_width="48dp"
+            android:layout_height="48dp">
+
+            <ImageView
+                android:id="@+id/image_view_play_toggle"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_notif_play" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/button_play_next"
+            android:layout_width="48dp"
+            android:layout_height="48dp">
+
+            <ImageView
+                android:id="@+id/image_view_play_next"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_notif_forward" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Text -->
+
+    <LinearLayout
+        android:id="@+id/layout_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/image_view_album"
+        android:layout_toStartOf="@id/layout_play_controls"
+        android:layout_below="@id/image_skyline"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/text_view_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/rauch_haus_song" />
+
+        <TextView
+            android:id="@+id/text_view_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCFFFFFF"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/rio_reiser" />
+
+    </LinearLayout>
+
+</RelativeLayout>

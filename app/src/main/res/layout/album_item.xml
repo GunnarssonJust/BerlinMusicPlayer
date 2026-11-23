@@ -3,9 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="150dp"
-    app:cardCornerRadius="10dp"
+    app:cardCornerRadius="15dp"
     app:cardElevation="10dp"
-    android:layout_height="180dp"
+    android:layout_height="170dp"
     android:layout_margin="10dp"
     >
 
@@ -16,26 +16,43 @@
         android:id="@+id/relative_layout">
 
         <ImageView
-            android:layout_width="150dp"
-            android:layout_height="150dp"
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            android:layout_centerHorizontal="true"
             android:id="@+id/albumitem_image"
             android:src="@drawable/ic_launcher_foreground"
             />
+
         <TextView
+            android:id="@+id/album_subtext"
             android:layout_width="140dp"
             android:layout_height="wrap_content"
-            android:id="@+id/album_subtext"
-            android:layout_alignParentBottom="true"
-            android:text="@string/alben"
-            android:textColor="@color/white"
-            android:singleLine="true"
-            android:gravity="center_horizontal"
+            android:layout_below="@+id/albumitem_image"
+            android:layout_alignParentBottom="false"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="10dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="1dp"
+            android:gravity="center_horizontal"
+            android:singleLine="true"
+            android:text="@string/alben"
+            android:textColor="@color/lightergreen"
             android:textStyle="bold"
+            android:textSize="12sp"/>
 
-            />
+        <TextView
+            android:id="@+id/album_year"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/album_subtext"
+            android:layout_alignParentBottom="false"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="1dp"
+            android:layout_marginBottom="1dp"
+            android:gravity="center_horizontal"
+            android:singleLine="true"
+            android:text="@string/unbekanntes_jahr"
+            android:textColor="@color/lighterred"
+            android:textStyle="bold"
+            android:textSize="12sp"/>
     </RelativeLayout>
 
 </androidx.cardview.widget.CardView>

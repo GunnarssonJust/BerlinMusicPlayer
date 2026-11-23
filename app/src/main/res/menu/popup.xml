@@ -17,4 +17,8 @@
         android:title="@string/interpret"
         android:id="@+id/artist_link"
         app:showAsAction="never"/>
+    <item
+        android:title="@string/schlummermodus"
+        android:id="@+id/menu_sleep_timer"
+        app:showAsAction="never"/>
 </menu>
