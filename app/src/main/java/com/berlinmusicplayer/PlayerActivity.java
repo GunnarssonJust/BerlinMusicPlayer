@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import android.annotation.SuppressLint;
-import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -43,9 +42,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-
 import java.util.ArrayList;
-import java.util.Random;
 
 public class PlayerActivity extends AppCompatActivity implements ActionPlaying, ServiceConnection, SearchView.OnQueryTextListener {
 

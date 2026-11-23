@@ -102,7 +102,7 @@ public class MainActivity extends BaseActivity implements SearchView.OnQueryText
 		// Service starten (damit onStartCommand() aufgerufen wird)
         initViewPager();
         permission();
-		handleIntent(getIntent());
+        handleIntent(getIntent());
     }
 
     @Override
@@ -525,9 +525,7 @@ public class MainActivity extends BaseActivity implements SearchView.OnQueryText
             serviceIntent.putExtra("actionName", "PLAY_URI");
             serviceIntent.putExtra("uri", audioUri.toString());
         }
-
         startService(serviceIntent);
-
     }
 }
       

@@ -17,10 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-								   
-						 
-							  
-
 import java.util.ArrayList;
 
 public class AlbumFragment extends Fragment {
@@ -37,8 +33,6 @@ public class AlbumFragment extends Fragment {
     public AlbumFragment() {
 		//required empty public constructor
 	}
-											
-	 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

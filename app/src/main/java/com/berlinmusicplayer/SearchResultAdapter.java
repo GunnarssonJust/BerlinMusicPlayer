@@ -27,7 +27,6 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
     private final Context mContext;
     private final ArrayList<SearchResultItem> results;
     private Map<String, Integer> songPositionMap = new HashMap<>();
-    MusicService musicService;
 
     public SearchResultAdapter(Context mContext, ArrayList<SearchResultItem> results) {
         this.mContext = mContext;

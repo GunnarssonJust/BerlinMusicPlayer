@@ -220,7 +220,7 @@ public class AlbumDetails extends BaseActivity {
             registerReceiver(songChangeReceiver,
                     new IntentFilter("SONG_CHANGED"), Context.RECEIVER_EXPORTED);
         } else {
-            registerReceiver(songChangeReceiver, new IntentFilter("SONG_CHANGED"));
+            registerReceiver(songChangeReceiver, new IntentFilter("SONG_CHANGED"),Context.RECEIVER_NOT_EXPORTED);
         }
     }
 

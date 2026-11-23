@@ -45,7 +45,6 @@ public class SongListAdapter extends RecyclerView.Adapter {
     }
 
     @NonNull
-
     public MyHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(mContext).inflate(R.layout.music_items, parent, false);
         return new MyHolder(view);
@@ -103,7 +102,6 @@ public class SongListAdapter extends RecyclerView.Adapter {
 
 
             popupMenu.setOnMenuItemClickListener(item -> {
-
                 if(item.getItemId() == M_ALBUM){
                     Intent intent = new Intent(mContext, AlbumDetails.class);
                     intent.putExtra("albumName", song.getAlbum());
@@ -133,7 +131,6 @@ public class SongListAdapter extends RecyclerView.Adapter {
                                 if (pos == RecyclerView.NO_POSITION) return;
                                 artistDetailFiles.remove(pos);
                                 notifyItemRemoved(pos);
-
                             })
                             .setNegativeButton("Nein", null)
                             .show();
@@ -179,7 +176,6 @@ public class SongListAdapter extends RecyclerView.Adapter {
                                                 "\" hinzugefügt!",
                                         Toast.LENGTH_SHORT
                                 ).show();
-
                             })
                             .setNegativeButton("Abbrechen", null)
                             .show();

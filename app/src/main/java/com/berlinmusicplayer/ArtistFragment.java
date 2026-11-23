@@ -36,7 +36,7 @@ public class ArtistFragment extends Fragment {
     private final Runnable hideBubbleRunnable = this::hidePopupBubble;
 
  
-																 
+	//Constructor für Fragment
     public ArtistFragment() {}
 
     @Override

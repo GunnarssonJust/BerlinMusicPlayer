@@ -86,12 +86,6 @@ public class SongsFragment extends Fragment {
             musicAdapter.updateList(filteredList, isSearchResult);
         }
     }
-    public void updateMusicList(ArrayList<MusicFiles> newList, boolean isSearchResult) {
-        // ...
-        if (musicAdapter != null) {
-            musicAdapter.updateList(newList, isSearchResult); // Gib den Parameter weiter
-        }
-    }
 
     private void buildLetterIndex() {
         letterPositions.clear();

@@ -4,21 +4,18 @@ package com.berlinmusicplayer;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import java.util.Collections;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.MyHolder>{
@@ -59,9 +56,7 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.MyHolder>{
     }
 
     @Override
-    public int getItemCount() {
-        return albumFiles.size();
-    }
+    public int getItemCount() {return albumFiles.size();}
 
     public class MyHolder extends RecyclerView.ViewHolder{
         ImageView album_image;

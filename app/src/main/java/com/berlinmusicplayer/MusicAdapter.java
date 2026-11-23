@@ -1,12 +1,9 @@
 package com.berlinmusicplayer;
 
-import static com.berlinmusicplayer.AlbumDetailsAdapter.albumFiles;
-
 import android.annotation.SuppressLint;
 import android.content.ContentUris;import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
